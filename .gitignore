@@ -1,0 +1,14 @@
+.tools/
+release/
+backups/
+test-state/
+**/bin/
+**/obj/
+**/__pycache__/
+.vs/
+*.user
+*.pyc
+.env
+**/receiver.json
+protocol-test.json
+input-test.json

@@ -1,0 +1,13 @@
+{
+  "success": true,
+  "simulated_only": true,
+  "backup_before_flash": true,
+  "backup_failure_stops_flash": true,
+  "flash_offsets": [
+    "0x0",
+    "0x8000",
+    "0xd000",
+    "0x20000",
+    "0x600000"
+  ]
+}

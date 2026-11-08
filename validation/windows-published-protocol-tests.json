@@ -1,0 +1,29 @@
+{
+  "success": true,
+  "passed": [
+    "UDP discovery and pairing",
+    "Lost pairing reply can be retried",
+    "Discovery survives null fields and hides an existing token",
+    "Paired discovery HMAC is valid",
+    "Unauthorized request rejected",
+    "Malformed JSON rejected",
+    "Null utterance ID rejected",
+    "Null text rejected",
+    "Oversized HTTP body rejected",
+    "Begin accepted",
+    "Repeated begin is idempotent",
+    "Concurrent utterance rejected",
+    "Oversized text rejected without consuming the utterance",
+    "UTF-8 text delivery",
+    "Concurrent retries inject once",
+    "Conflicting replay rejected",
+    "Unsolicited text rejected",
+    "Identical speech in a new utterance is accepted",
+    "Cancelled recording cannot type",
+    "Pause blocks recording",
+    "Receipt survives receiver restart",
+    "Interrupted input is not replayed after restart"
+  ],
+  "native_input_tested": false,
+  "native_text": ""
+}

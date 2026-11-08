@@ -1,0 +1,8 @@
+{
+  "host_failure_signatures_match_upstream": true,
+  "host_tests": 81,
+  "inherited_failures": 17,
+  "inherited_errors": 23,
+  "checked_ui_strings": 30,
+  "missing_font_characters": ""
+}
