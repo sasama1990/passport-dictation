@@ -57,6 +57,15 @@ The optional `flash-firmware.ps1` script operates on the `Firmware` directory fr
 
 Cloud configuration uses the separate `dictcloud/config` NVS value. Existing LAN credentials in `dictation` remain readable. The firmware's `CONFIG_PASSPORT_RELAY_URL` and Windows `RelayClient.DefaultUrl` select the shipped default service. Runtime setup can select another HTTPS relay on both ends.
 
+## Release synchronization
+
+Every new community firmware revision must have a corresponding GitHub release containing the latest Windows companion ZIP, the compatible merged firmware and SHA-256 checksums.
+
+1. Build and validate the Windows companion and firmware for the release.
+2. Publish the GitHub release and verify its downloadable attachments and hashes.
+3. Include that release's download URL and compatible Windows version in the community description and separate usage instructions.
+4. Submit the community revision with its own changelog, then verify the submitted firmware hash and actual review status.
+
 ## Validation records
 
 `validation/v0.2.0-preview.1/` contains current headless protocol, relay and firmware validation records. The earlier root-level validation files belong to `0.1.0-preview.1`.
