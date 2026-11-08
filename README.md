@@ -2,7 +2,7 @@
 
 把 AI Passport 变成 Windows 电脑的随身语音输入按钮。按住 OK 说话，松开后将云端识别的文字送入当前光标所在的输入框。
 
-Windows `0.2.0-preview.1` 与固件 `2.5.0-pd2` 增加了默认公网中继和配对码。设备与电脑各自联网即可跨网络使用，也可以选择局域网直连。
+Windows `0.2.0-preview.2` 与固件 `2.5.0-pd2` 提供默认公网中继和配对码。设备与电脑各自联网即可跨网络使用，也可以选择局域网直连。Windows 程序文件、窗口和托盘采用与社区封面一致的蓝色麦克风图标。
 
 这是开发预览版。公网协议集成、重试防重、焦点变化保护和固件编译已完成验证，设备实际录音、当前小智云模型的识别结束时机及真实软件输入兼容性仍待实测。
 
@@ -10,7 +10,7 @@ Windows `0.2.0-preview.1` 与固件 `2.5.0-pd2` 增加了默认公网中继和�
 
 同时安装本玩法的设备固件和 Windows 配套程序。Windows 配套 ZIP 解压后运行 `Windows/PassportDictation.exe`，其中已包含运行所需组件。包内另附分段固件、手动备份刷写脚本和许可文件。社区安装使用单独提供的完整固件镜像。
 
-[下载 Windows 配套包及固件](https://github.com/sasama1990/passport-dictation/releases/tag/v0.2.0-preview.1)
+[下载 Windows 配套包及固件](https://github.com/sasama1990/passport-dictation/releases/tag/v0.2.0-preview.2)
 
 ## 跨网络上手
 
@@ -45,7 +45,9 @@ Windows `0.2.0-preview.1` 与固件 `2.5.0-pd2` 增加了默认公网中继和�
 
 ## 验证范围
 
-本版本通过 17 项无界面协议集成检查，使用实际默认公网中继和模拟输入端，覆盖跨网配对、配置保存失败回滚、Unicode 投递、并发重试防重、焦点变化、取消、暂停、单调时钟过期、重启续用及局域网回归。中继的 7 组测试全部通过。
+Windows 图标更新已通过构建、成品图标提取和内嵌资源一致性检查。
+
+跨网络功能已通过 17 项无界面协议集成检查，使用实际默认公网中继和模拟输入端，覆盖跨网配对、配置保存失败回滚、Unicode 投递、并发重试防重、焦点变化、取消、暂停、单调时钟过期、重启续用及局域网回归。中继的 7 组测试全部通过。
 
 固件完成编译、合并镜像与分段一致性校验、中文字体覆盖和修改文件的格式检查。已修正发现任务在 Wi-Fi 网络栈初始化前创建 socket 的启动顺序问题。该修复的实际开机表现仍需设备验证。
 
@@ -53,11 +55,11 @@ Windows `0.2.0-preview.1` 与固件 `2.5.0-pd2` 增加了默认公网中继和�
 
 ## English quick start
 
-Turn AI Passport into a handheld dictation button for Windows. Hold OK to speak and release to send the cloud transcription to the selected text field. Version `0.2.0-preview.1` adds a hosted relay and pairing codes, allowing the device and PC to use different internet connections.
+Turn AI Passport into a handheld dictation button for Windows. Hold OK to speak and release to send the cloud transcription to the selected text field. Version `0.2.0-preview.2` includes a hosted relay and pairing codes, allowing the device and PC to use different internet connections. Its executable, windows and tray share the community cover's blue microphone icon.
 
 Install both this play's firmware and its companion Windows application.
 
-[Download the Windows companion and firmware](https://github.com/sasama1990/passport-dictation/releases/tag/v0.2.0-preview.1)
+[Download the Windows companion and firmware](https://github.com/sasama1990/passport-dictation/releases/tag/v0.2.0-preview.2)
 
 1. Extract the companion ZIP and run `Windows/PassportDictation.exe`. Open “跨网络设置” (Cross-network settings), keep the default relay address, and select “生成跨网配对码” (Generate pairing code). The code lasts about 10 minutes. Keep the PC online with the receiver running.
 2. First boot opens Wi-Fi setup. To change networks, hold DOWN while idle. On a phone or computer, join the `Xiaozhi-XXXX` hotspot shown on the device. Open `http://192.168.4.1:18766`, select “跨网络” (Cross-network), enter the code, save, and select “继续设置 Wi-Fi” (Continue Wi-Fi setup).
@@ -71,7 +73,7 @@ Closing or minimizing the receiver hides it to the system tray. Double-click its
 
 The relay carries recognized text and delivery commands over HTTPS and temporarily handles plaintext. Commands expire after about 10 seconds and their text is cleared on acknowledgement. Expired metadata is cleaned during service activity. Audio recognition uses the device's XiaoZhi cloud connection.
 
-This development preview passed 17 headless protocol checks against the public relay using a simulated input sink, plus 7 relay test groups. Firmware compilation and image verification passed. Physical-device startup and recording, cloud recognition timing, and real Windows input compatibility still await testing.
+The Windows icon update passed compilation, extraction from the published executable and embedded-resource verification. Cross-network functionality passed 17 headless protocol checks against the public relay using a simulated input sink, plus 7 relay test groups. Firmware compilation and image verification passed. Physical-device startup and recording, cloud recognition timing, and real Windows input compatibility still await testing.
 
 ## 源码与构建
 

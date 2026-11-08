@@ -34,7 +34,7 @@ internal sealed class MainForm : Form
         ClientSize = new Size(660, 520);
         MinimumSize = new Size(560, 440);
         StartPosition = FormStartPosition.CenterScreen;
-        Icon = SystemIcons.Application;
+        Icon = new Icon(typeof(MainForm), "Assets.passport-dictation.ico");
         BackColor = Color.FromArgb(247, 249, 252);
 
         var layout = new TableLayoutPanel
@@ -91,7 +91,7 @@ internal sealed class MainForm : Form
         cloudSettings.Click += async (_, _) =>
         {
             if (store == null) return;
-            using var settings = new RelaySettingsForm(store, RestartRelayAsync);
+            using var settings = new RelaySettingsForm(store, RestartRelayAsync) { Icon = Icon };
             settings.ShowDialog(this);
             await RestartRelayAsync();
         };
@@ -105,7 +105,13 @@ internal sealed class MainForm : Form
         };
         test.Click += (_, _) =>
         {
-            var editor = new Form { Text = "Passport 测试输入框", Size = new Size(600, 350), StartPosition = FormStartPosition.CenterParent };
+            var editor = new Form
+            {
+                Text = "Passport 测试输入框",
+                Size = new Size(600, 350),
+                StartPosition = FormStartPosition.CenterParent,
+                Icon = Icon,
+            };
             var text = new TextBox { Multiline = true, Dock = DockStyle.Fill, Font = Font, AcceptsReturn = true };
             editor.Controls.Add(text);
             if (receiverInput != null)

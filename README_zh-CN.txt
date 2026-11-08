@@ -1,7 +1,8 @@
 Passport 语音输入 / Passport Dictation
-Windows 0.2.0-preview.1，设备固件 2.5.0-pd2
+Windows 0.2.0-preview.2，设备固件 2.5.0-pd2
 
 同时使用本玩法固件与 Windows 接收程序。
+新版 Windows 的程序文件、窗口与托盘使用社区封面同款蓝色麦克风图标。
 本开发预览版已通过公网协议验证，真实设备录音、开机与软件输入兼容性仍待实测。
 
 跨网络上手
@@ -60,5 +61,5 @@ Firmware compilation and image verification passed, including the corrected netw
 Physical-device startup, recording, cloud recognition timing and real Windows input compatibility still await testing.
 
 Source https://github.com/sasama1990/passport-dictation
-Release https://github.com/sasama1990/passport-dictation/releases/tag/v0.2.0-preview.1
+Release https://github.com/sasama1990/passport-dictation/releases/tag/v0.2.0-preview.2
 Default relay https://passport-dictation-relay-sasama.gabledhill.chatgpt.site
