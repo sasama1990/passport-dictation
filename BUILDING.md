@@ -8,15 +8,38 @@ Use .NET SDK 10 and PowerShell on Windows.
 .\build-windows.ps1
 ```
 
-The self-contained application is written to `release/Windows`.
+The self-contained application is written to `release/Windows`. Use `-DotnetPath` to select a portable SDK and `-OutputDirectory` to choose another destination.
 
-Run the published protocol checks with isolated state.
+## Headless integration checks
+
+The protocol harness links the production receiver, state store, LAN server and relay client. It uses a simulated input sink and runs without a GUI. Supply a relay URL, a test-state directory and a report file. Each invocation creates isolated state inside that directory.
 
 ```powershell
-.\release\Windows\PassportDictation.exe --self-test .\protocol-test.json --protocol-only --data-dir .\test-state
+dotnet run --project tests/ProtocolTests/ProtocolTests.csproj -c Release -- `
+  https://passport-dictation-relay-sasama.gabledhill.chatgpt.site `
+  .\test-state .\protocol-test.json
 ```
 
-For the native input check, omit `--protocol-only` and keep the self-test window in the foreground. The native test restricts input to its own editor.
+The checks create a temporary pairing on the selected relay. A loopback HTTP relay is accepted by this harness. The normal application requires HTTPS.
+
+The existing Windows self-test remains available with isolated state.
+
+```powershell
+.\release\Windows\PassportDictation.exe --self-test .\input-test.json --protocol-only --data-dir .\test-state
+```
+
+For the native input check, omit `--protocol-only` and keep the self-test window in the foreground. The native test restricts input to its own editor. Native input and real-device tests remain manual validation steps for this preview.
+
+## Relay
+
+Use Node.js 22.13 or newer for the built-in SQLite development adapter. The deployed Worker uses a D1 binding named `DB`. Development and deployment details are in [relay/README.md](relay/README.md).
+
+```powershell
+Set-Location relay
+npm ci
+npm test
+npm run build
+```
 
 ## Firmware
 
@@ -28,17 +51,16 @@ Use ESP-IDF 6.1 and its matching Python environment. In an ESP-IDF PowerShell en
 
 The canonical variant is `folotoy/ai-passport --name passport-dictation --language zh-CN`.
 The build creates `firmware/build/merged-binary.bin` for installation from address `0x0`.
-This merged image contains an empty NVS region. Existing device settings require a separate backup before replacement.
+This merged image contains an empty NVS region. Back up existing device settings before replacement.
 
 The optional `flash-firmware.ps1` script operates on the `Firmware` directory from the release ZIP. It backs up the device before writing the individual segments.
 
-## Validation
+Cloud configuration uses the separate `dictcloud/config` NVS value. Existing LAN credentials in `dictation` remain readable. The firmware's `CONFIG_PASSPORT_RELAY_URL` and Windows `RelayClient.DefaultUrl` select the shipped default service. Runtime setup can select another HTTPS relay on both ends.
 
-`validation/windows-published-protocol-tests.json` records 22 passed local protocol checks.
-`validation/firmware-validation.json` records the clean-baseline comparison and font check.
-`validation/flash-script-tests.json` covers the mocked backup-before-flash flow and backup failure handling.
+## Validation records
 
-The firmware host suite has the same 17 failures and 23 errors as its clean upstream snapshot. The single-board distribution omits other boards and test resources referenced by that suite.
-Firmware compilation passed under ESP-IDF 6.1. The shared MQTT/UDP and WebSocket code paths compile, while physical-device behavior remains unverified.
+`validation/v0.2.0-preview.1/` contains current headless protocol, relay and firmware validation records. The earlier root-level validation files belong to `0.1.0-preview.1`.
+
+The firmware host suite has the same 17 failures and 23 errors as its clean upstream snapshot. The single-board distribution omits other boards and test resources referenced by that suite. Firmware compilation passed under ESP-IDF 6.1. The shared MQTT/UDP and WebSocket code paths compile. The selected cloud service's complete `stt.text` response after manual `listen.stop` still needs physical-device testing.
 
 The firmware upstream snapshot is `72da544d1b51678f5d88967adc299b3aec956946`.

@@ -1,0 +1,27 @@
+{
+  "firmware_version": "2.5.0-pd2",
+  "esp_idf": "6.1",
+  "merged_sha256": "bee712d88d8f09ef97a5eb1922ca7b8a8cdfbd1560e1a2e7de52f756ff01a734",
+  "merged_size": 7616468,
+  "merged_segments_match": {
+    "0x0": true,
+    "0x8000": true,
+    "0xd000": true,
+    "0x600000": true,
+    "0x20000": true
+  },
+  "nvs_range_0x9000_0xcfff_empty": true,
+  "source_files_match_build_cache": 914,
+  "source_tree_sha256": "d6d86fed429af89ec26914e3a7fd35d3c8a4cde038fad31ae5bebb585c6ad431",
+  "host_failure_signatures_match_upstream": true,
+  "host_tests": 81,
+  "inherited_failures": 17,
+  "inherited_errors": 23,
+  "checked_ui_strings": 37,
+  "missing_font_characters": "",
+  "app_size_bytes": 2361504,
+  "app_partition_bytes": 3080192,
+  "startup_barrier": "Wait for WifiManager initialization before socket creation",
+  "startup_fix_device_verified": false,
+  "physical_device_tested": false
+}

@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Diagnostics;
 
 namespace PassportDictation;
 
@@ -218,12 +219,14 @@ internal sealed class SmokeTestForm : Form
     {
         public int Count { get; private set; }
         public ITextInput? Native { get; set; }
-        public Task<InputTarget?> CaptureAsync() => Native?.CaptureAsync()
+        public Task<InputTarget?> CaptureAsync(long? deadline = null) => Native?.CaptureAsync(deadline)
             ?? Task.FromResult<InputTarget?>(new InputTarget(1, 1));
-        public Task<string> SubmitAsync(InputTarget target, string text)
+        public Task<string> SubmitAsync(InputTarget target, string text, long? deadline = null)
         {
+            if (deadline is long limit && Stopwatch.GetTimestamp() >= limit)
+                return Task.FromResult("expired");
             Count++;
-            return Native?.SubmitAsync(target, text) ?? Task.FromResult("submitted");
+            return Native?.SubmitAsync(target, text, deadline) ?? Task.FromResult("submitted");
         }
     }
 }

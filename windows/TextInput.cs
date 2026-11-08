@@ -1,24 +1,19 @@
 using System.Runtime.InteropServices;
+using System.Diagnostics;
 
 namespace PassportDictation;
-
-internal readonly record struct InputTarget(nint Window, nint Focus);
-
-internal interface ITextInput
-{
-    Task<InputTarget?> CaptureAsync();
-    Task<string> SubmitAsync(InputTarget target, string text);
-}
 
 internal sealed class WindowsTextInput(Control dispatcher) : ITextInput
 {
     public nint TestWindow { get; set; }
     public bool RestrictToTestWindow { get; set; }
 
-    public async Task<InputTarget?> CaptureAsync()
+    public async Task<InputTarget?> CaptureAsync(long? deadline = null)
     {
         return await dispatcher.InvokeAsync(() =>
         {
+            if (deadline is long limit && Stopwatch.GetTimestamp() >= limit)
+                return (InputTarget?)null;
             var window = Native.GetForegroundWindow();
             if (window == 0)
                 return (InputTarget?)null;
@@ -34,10 +29,12 @@ internal sealed class WindowsTextInput(Control dispatcher) : ITextInput
         });
     }
 
-    public async Task<string> SubmitAsync(InputTarget target, string text)
+    public async Task<string> SubmitAsync(InputTarget target, string text, long? deadline = null)
     {
         return await dispatcher.InvokeAsync(() =>
         {
+            if (deadline is long limit && Stopwatch.GetTimestamp() >= limit)
+                return "expired";
             if (RestrictToTestWindow && target.Window != TestWindow)
                 return "focus_changed";
             if (Native.GetForegroundWindow() != target.Window)
@@ -55,6 +52,8 @@ internal sealed class WindowsTextInput(Control dispatcher) : ITextInput
                 events[index * 2] = Native.Input.Unicode(text[index], keyUp: false);
                 events[index * 2 + 1] = Native.Input.Unicode(text[index], keyUp: true);
             }
+            if (deadline is long sendLimit && Stopwatch.GetTimestamp() >= sendLimit)
+                return "expired";
             var sent = Native.SendInput((uint)events.Length, events, Marshal.SizeOf<Native.Input>());
             if (sent == events.Length)
                 return "submitted";

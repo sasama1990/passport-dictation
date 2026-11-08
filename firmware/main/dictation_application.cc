@@ -27,6 +27,15 @@ void Application::StopDictation() {
     });
 }
 
+void Application::OpenDictationSetup() {
+    dictation_pressed_.store(false);
+    Schedule([this]() {
+        if (dictation_phase_ != DictationPhase::Idle)
+            CancelDictation("进入连接设置");
+        DictationBridge::GetInstance().ResetPairing();
+    });
+}
+
 void Application::PrepareDictation() {
     auto* display = Board::GetInstance().GetDisplay();
     if (!dictation_pressed_.load()) {
@@ -58,8 +67,22 @@ void Application::PrepareDictation() {
 void Application::HandleDictationBridge(const std::string& action, const std::string& id,
                                         const std::string& status) {
     auto* display = Board::GetInstance().GetDisplay();
+    if (action == "setup") {
+        display->SetChatMessage("system", id.c_str());
+        display->ShowNotification("手机打开设置页输入配对码", 10000);
+        return;
+    }
     if (action == "pair") {
-        display->ShowNotification(status == "paired" ? "电脑已配对" : "请在电脑上开启配对");
+        if (status == "paired_cloud")
+            display->ShowNotification("跨网电脑已配对");
+        else if (status == "pairing_cloud")
+            display->ShowNotification("联网后自动跨网配对");
+        else if (status == "pairing_expired")
+            display->ShowNotification("请在电脑重新获取配对码", 10000);
+        else if (status == "storage_error")
+            display->ShowNotification("保存失败，请重新设置");
+        else
+            display->ShowNotification(status == "paired" ? "电脑已配对" : "请在电脑上开启配对");
         return;
     }
     if (id != dictation_id_) {
@@ -70,8 +93,11 @@ void Application::HandleDictationBridge(const std::string& action, const std::st
     }
     if (action == "begin") {
         if (status != "ready") {
-            CancelDictation(status == "not_paired" ? "请先与Windows程序配对"
-                                                   : "电脑未就绪，请选中输入框重试");
+            if (status == "receiver_offline")
+                CancelDictation("电脑离线，请先启动接收程序");
+            else
+                CancelDictation(status == "not_paired" ? "请先与Windows程序配对"
+                                                       : "电脑未就绪，请选中输入框重试");
             return;
         }
         if (!dictation_pressed_.load()) {

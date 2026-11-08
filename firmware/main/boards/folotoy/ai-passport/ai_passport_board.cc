@@ -119,14 +119,14 @@ private:
         up->OnClick([this]() {
 #ifdef CONFIG_PASSPORT_DICTATION
             Application::GetInstance().Schedule(
-                [this]() { GetDisplay()->ShowNotification("按住OK说话；长按上键重新配对"); });
+                [this]() { GetDisplay()->ShowNotification("按住OK说话，长按上键设置"); });
 #else
             Application::GetInstance().Schedule([this]() { ChangeVolume(10); });
 #endif
         });
         up->OnLongPress([this]() {
 #ifdef CONFIG_PASSPORT_DICTATION
-            DictationBridge::GetInstance().ResetPairing();
+            Application::GetInstance().OpenDictationSetup();
 #else
             Application::GetInstance().Schedule([this]() {
                 GetAudioCodec()->SetOutputVolume(100);
@@ -146,7 +146,7 @@ private:
         });
         down->OnLongPress([this]() {
 #ifdef CONFIG_PASSPORT_DICTATION
-            EnterWifiConfigMode();
+            Application::GetInstance().Schedule([this]() { EnterWifiConfigMode(); });
 #else
             Application::GetInstance().Schedule([this]() {
                 GetAudioCodec()->SetOutputVolume(0);

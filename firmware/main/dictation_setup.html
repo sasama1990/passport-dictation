@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Passport 连接设置</title>
+  <style>
+    body {
+      font: 16px system-ui;
+      background: #f3f6fa;
+      color: #17233a;
+      margin: 0;
+      padding: 24px;
+    }
+    main {
+      max-width: 520px;
+      margin: auto;
+      background: white;
+      padding: 24px;
+      border-radius: 16px;
+    }
+    h1 { font-size: 24px; }
+    label { display: block; margin: 16px 0 8px; }
+    input, select, button {
+      box-sizing: border-box;
+      width: 100%;
+      font: inherit;
+      padding: 12px;
+      border: 1px solid #bcc9db;
+      border-radius: 8px;
+    }
+    button { background: #2457c5; color: white; margin-top: 20px; }
+    p { line-height: 1.6; }
+    a { display: inline-block; margin-top: 12px; color: #2457c5; }
+    #status { white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Passport 连接设置</h1>
+    <p>跨网络使用时，先在 Windows 接收程序生成配对码，在这里保存，再完成设备的 Wi-Fi 配网。</p>
+    <form id="setup">
+      <label for="mode">连接方式</label>
+      <select id="mode">
+        <option value="cloud">跨网络</option>
+        <option value="lan">局域网</option>
+      </select>
+      <div id="cloud">
+        <label for="url">HTTPS 中继地址</label>
+        <input id="url" type="url" maxlength="192" value="@@URL@@">
+        <label for="code">电脑显示的配对码</label>
+        <input id="code" autocomplete="off" autocapitalize="characters" maxlength="16" placeholder="ABCD-EFGH">
+      </div>
+      <button id="save">保存连接设置</button>
+    </form>
+    <p id="status" role="status"></p>
+    <a href="http://192.168.4.1">继续设置 Wi-Fi</a>
+    <p>首次或换网时，用配网热点打开 Wi-Fi 页面，选择 2.4 GHz Wi-Fi，输入密码并连接。已经联网的设备会自动完成跨网配对。</p>
+  </main>
+  <script>
+    const connectionMode = document.getElementById('mode');
+    const cloudFields = document.getElementById('cloud');
+    const relayAddress = document.getElementById('url');
+    const pairingCode = document.getElementById('code');
+    const statusMessage = document.getElementById('status');
+    const saveButton = document.getElementById('save');
+
+    connectionMode.onchange = () => {
+      const local = connectionMode.value === 'lan';
+      cloudFields.hidden = local;
+      relayAddress.disabled = local;
+      pairingCode.disabled = local;
+    };
+
+    document.getElementById('setup').onsubmit = async event => {
+      event.preventDefault();
+      saveButton.disabled = true;
+      statusMessage.textContent = '正在保存…';
+      try {
+        const response = await fetch('/configure', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Passport-Setup': '@@NONCE@@'
+          },
+          body: JSON.stringify({
+            mode: connectionMode.value,
+            url: relayAddress.value.trim(),
+            code: pairingCode.value.toUpperCase().replaceAll('-', '').replaceAll(' ', '')
+          })
+        });
+        if (!response.ok) {
+          throw new Error('请检查地址和配对码，或长按设备上键重新打开设置。');
+        }
+        statusMessage.textContent = connectionMode.value === 'cloud'
+          ? '配置已接收。请继续完成 Wi-Fi 配网，联网后自动配对。'
+          : '配置已接收。请在电脑上开启局域网配对。';
+      } catch (error) {
+        statusMessage.textContent = error.message;
+      } finally {
+        saveButton.disabled = false;
+      }
+    };
+  </script>
+</body>
+</html>

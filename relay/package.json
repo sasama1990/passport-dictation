@@ -1,0 +1,16 @@
+{
+  "name": "passport-dictation-relay",
+  "version": "0.2.0-preview.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "dev": "node dev-server.mjs",
+    "build": "node build.mjs",
+    "db:generate": "drizzle-kit generate"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.8",
+    "drizzle-orm": "^0.44.7"
+  }
+}

@@ -1,12 +1,19 @@
 menu "Xiaozhi Assistant"
 
 config PASSPORT_DICTATION
-    bool "Passport LAN dictation receiver"
+    bool "Passport dictation receiver"
     default n
     depends on BOARD_TYPE_FOLOTOY_AI_PASSPORT
     help
         Hold OK to record, reuse cloud STT, and forward the transcription to
         the paired Windows receiver. This variant uses manual listening.
+
+config PASSPORT_RELAY_URL
+    string "Passport HTTPS relay URL"
+    depends on PASSPORT_DICTATION
+    default "https://passport-dictation-relay-sasama.gabledhill.chatgpt.site"
+    help
+        Default public relay used for cross-network pairing and text delivery.
 
 config OTA_URL
     string "Default OTA URL"

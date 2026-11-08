@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Diagnostics;
 
 namespace PassportDictation;
 
@@ -12,11 +13,11 @@ internal sealed class DictationReceiver(StateStore store, ITextInput input)
     private readonly SemaphoreSlim gate = new(1);
     private string activeId = "";
     private InputTarget? target;
-    private DateTimeOffset started;
+    private long started;
     public bool Enabled { get; set; } = true;
     public Action<ReceiverNotice>? Notice { get; set; }
 
-    public async Task<DeliveryResult> BeginAsync(string id)
+    public async Task<DeliveryResult> BeginAsync(string id, long? deadline = null)
     {
         if (!ValidId(id))
             return new("invalid_id", 400);
@@ -30,21 +31,23 @@ internal sealed class DictationReceiver(StateStore store, ITextInput input)
                 return new(existing.Status);
             if (activeId == id)
                 return new("ready");
-            if (activeId.Length > 0 && DateTimeOffset.UtcNow - started < TimeSpan.FromSeconds(100))
+            if (deadline is long limit && Stopwatch.GetTimestamp() >= limit)
+                return new("expired", 408);
+            if (activeId.Length > 0 && Stopwatch.GetElapsedTime(started) < TimeSpan.FromSeconds(120))
                 return new("busy", 409);
-            var captured = await input.CaptureAsync();
+            var captured = await input.CaptureAsync(deadline);
             if (captured == null)
                 return new("no_target", 409);
             activeId = id;
             target = captured;
-            started = DateTimeOffset.UtcNow;
+            started = Stopwatch.GetTimestamp();
             Notice?.Invoke(new("listening"));
             return new("ready");
         }
         finally { gate.Release(); }
     }
 
-    public async Task<DeliveryResult> DeliverAsync(string id, string text)
+    public async Task<DeliveryResult> DeliverAsync(string id, string text, long? deadline = null)
     {
         if (!ValidId(id) || string.IsNullOrWhiteSpace(text) || text.Length > 4096 || text.Contains('\0'))
             return new("invalid_text", 400);
@@ -58,8 +61,12 @@ internal sealed class DictationReceiver(StateStore store, ITextInput input)
                     ? new(existing.Status)
                     : new("conflicting_text", 409);
             if (id != activeId || target == null)
+            {
+                Notice?.Invoke(new("unknown_utterance", text));
                 return new("unknown_utterance", 409);
-            if (!Enabled || DateTimeOffset.UtcNow - started >= TimeSpan.FromSeconds(100))
+            }
+            if (!Enabled || Stopwatch.GetElapsedTime(started) >= TimeSpan.FromSeconds(120)
+                || deadline is long limit && Stopwatch.GetTimestamp() >= limit)
             {
                 activeId = "";
                 target = null;
@@ -71,7 +78,8 @@ internal sealed class DictationReceiver(StateStore store, ITextInput input)
             // becomes uncertain after restart and will never be injected twice.
             store.Claim(id, hash);
             var status = "uncertain";
-            try { status = await input.SubmitAsync(target.Value, text); }
+            var inputDeadline = Math.Min(deadline ?? long.MaxValue, started + 120L * Stopwatch.Frequency);
+            try { status = await input.SubmitAsync(target.Value, text, inputDeadline); }
             finally
             {
                 store.Finish(id, status);
@@ -98,6 +106,17 @@ internal sealed class DictationReceiver(StateStore store, ITextInput input)
                 Notice?.Invoke(new("cancelled"));
             }
             return new("cancelled");
+        }
+        finally { gate.Release(); }
+    }
+
+    public async Task ResetActiveAsync()
+    {
+        await gate.WaitAsync();
+        try
+        {
+            activeId = "";
+            target = null;
         }
         finally { gate.Release(); }
     }

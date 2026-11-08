@@ -9,10 +9,12 @@
 #include <lwip/sockets.h>
 #include <psa/crypto.h>
 
+#include <algorithm>
 #include <cstring>
 #include <memory>
 #include <new>
 
+#include <wifi_manager.h>
 #include "board.h"
 #include "settings.h"
 #include "system_info.h"
@@ -94,13 +96,25 @@ void DictationBridge::Cancel(const std::string& id) {
 
 void DictationBridge::ResetPairing() { reset_pairing_.store(true); }
 
+std::string DictationBridge::RandomToken() {
+    uint8_t random[32];
+    esp_fill_random(random, sizeof(random));
+    return Hex(random, sizeof(random));
+}
+
 void DictationBridge::Run() {
+    LoadCloud();
     {
         Settings settings("dictation");
         receiver_id_ = settings.GetString("receiver");
         token_ = settings.GetString("token");
         host_ = settings.GetString("host");
         port_ = settings.GetInt("port", 18765);
+    }
+    // WifiManager initializes esp_netif and its tcpip thread. Creating a socket
+    // before that point asserts in lwIP because the TCP/IP mailbox is absent.
+    while (!WifiManager::GetInstance().IsInitialized()) {
+        vTaskDelay(pdMS_TO_TICKS(100));
     }
     socket_ = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (socket_ >= 0) {
@@ -115,20 +129,42 @@ void DictationBridge::Run() {
             token_.clear();
             host_.clear();
             Settings settings("dictation", true);
-            settings.EraseAll();
+            settings.SetString("receiver", "");
+            settings.SetString("token", "");
+            settings.SetString("host", "");
+            cloud_receiver_id_.clear();
+            cloud_token_.clear();
+            cloud_pair_code_.clear();
+            SaveCloud();
+            setup_until_ms_.store(NowMs() + 600000);
             last_discovery_ms_ = -10000;
             if (callback_) {
-                callback_("pair", "", "pairing");
+                callback_("setup", SetupUrl(), "open");
             }
         }
-        if (NowMs() - last_discovery_ms_ >= (receiver_id_.empty() ? 1000 : 10000)) {
+        if (WifiManager::GetInstance().IsInitialized() && SetupAllowed()) {
+            StartSetupServer();
+        } else {
+            StopSetupServer();
+        }
+        if (cloud_enabled_ && cloud_receiver_id_.empty() && !cloud_pair_code_.empty() &&
+            WifiManager::GetInstance().IsConnected() && NowMs() - last_pair_ms_ >= 5000) {
+            PairCloud();
+        }
+        if (!cloud_enabled_ &&
+            NowMs() - last_discovery_ms_ >= (receiver_id_.empty() ? 1000 : 10000)) {
             Discover();
         }
-        PollDiscovery();
+        if (!cloud_enabled_)
+            PollDiscovery();
         Job* queued = nullptr;
         if (xQueueReceive(queue_, &queued, pdMS_TO_TICKS(100)) == pdTRUE) {
             std::unique_ptr<Job> job(queued);
-            if (host_.empty()) {
+            if (job->action == "configure_cloud" || job->action == "configure_lan") {
+                ConfigureCloud(*job);
+                continue;
+            }
+            if (!cloud_enabled_ && host_.empty()) {
                 Discover();
                 for (int attempt = 0; attempt < 8 && host_.empty(); attempt++) {
                     vTaskDelay(pdMS_TO_TICKS(100));
@@ -260,10 +296,13 @@ void DictationBridge::PollDiscovery() {
 }
 
 std::string DictationBridge::Post(const Job& job) {
-    if (host_.empty() || token_.size() != 64) {
+    if (cloud_enabled_ ? cloud_receiver_id_.empty() || cloud_token_.size() != 64
+                       : host_.empty() || token_.size() != 64) {
         return "not_paired";
     }
     cJSON* root = cJSON_CreateObject();
+    if (root == nullptr)
+        return "out_of_memory";
     cJSON_AddStringToObject(root, "device_id", device_id_.c_str());
     cJSON_AddStringToObject(root, "id", job.id.c_str());
     if (!job.text.empty()) {
@@ -276,40 +315,25 @@ std::string DictationBridge::Post(const Job& job) {
     }
     std::string body(serialized);
     cJSON_free(serialized);
-    const auto url = "http://" + host_ + ":" + std::to_string(port_) + "/v1/" + job.action;
+    const auto url = cloud_enabled_
+                         ? relay_url_ + "/v1/device/" + cloud_receiver_id_ + "/" + job.action
+                         : "http://" + host_ + ":" + std::to_string(port_) + "/v1/" + job.action;
     for (int attempt = 0; attempt < 3; attempt++) {
-        if (NowMs() - job.created_ms > 10000) {
+        const int remaining = (cloud_enabled_ ? 14000 : 10000) - (NowMs() - job.created_ms);
+        if (remaining <= 0) {
             return "expired";
         }
-        auto http = Board::GetInstance().GetNetwork()->CreateHttp(0);
-        http->SetTimeout(2500);
-        http->SetKeepAlive(false);
-        http->SetHeader("Content-Type", "application/json");
-        http->SetHeader("Authorization", "Bearer " + token_);
-        http->SetContent(std::string(body));
-        auto opened = http->Open("POST", url);
-        if (!opened) {
-            continue;
-        }
-        const int code = http->GetStatusCode().value_or(0);
-        char response[512];
-        size_t used = 0;
-        while (used < sizeof(response) - 1) {
-            auto read = http->Read(response + used, sizeof(response) - 1 - used);
-            if (!read || *read <= 0) {
-                break;
-            }
-            used += *read;
-        }
-        response[used] = '\0';
-        http->Close();
+        auto response = Request(url, body, cloud_enabled_ ? cloud_token_ : token_,
+                                std::min(remaining, cloud_enabled_ ? 12000 : 2500));
+        const int code = response.code;
         if (code >= 500 || code == 0) {
             continue;
         }
         if (code == 401) {
             return "not_paired";
         }
-        std::unique_ptr<cJSON, decltype(&cJSON_Delete)> reply(cJSON_Parse(response), cJSON_Delete);
+        std::unique_ptr<cJSON, decltype(&cJSON_Delete)> reply(cJSON_Parse(response.body.c_str()),
+                                                              cJSON_Delete);
         if (reply != nullptr && StringField(reply.get(), "id") == job.id) {
             auto status = StringField(reply.get(), "status");
             if (!status.empty()) {
@@ -319,4 +343,31 @@ std::string DictationBridge::Post(const Job& job) {
         return "rejected";
     }
     return "network_error";
+}
+
+DictationBridge::HttpReply DictationBridge::Request(const std::string& url, const std::string& body,
+                                                    const std::string& token, int timeout_ms) {
+    auto http = Board::GetInstance().GetNetwork()->CreateHttp(0);
+    if (!http)
+        return {0, ""};
+    http->SetTimeout(timeout_ms);
+    http->SetKeepAlive(false);
+    http->SetHeader("Content-Type", "application/json");
+    if (!token.empty())
+        http->SetHeader("Authorization", "Bearer " + token);
+    http->SetContent(std::string(body));
+    if (!http->Open("POST", url))
+        return {0, ""};
+    const int code = http->GetStatusCode().value_or(0);
+    char response[768];
+    size_t used = 0;
+    while (used < sizeof(response) - 1) {
+        auto read = http->Read(response + used, sizeof(response) - 1 - used);
+        if (!read || *read <= 0)
+            break;
+        used += *read;
+    }
+    response[used] = '\0';
+    http->Close();
+    return {code, std::string(response, used)};
 }

@@ -47,7 +47,8 @@ set(SOURCES "audio/audio_codec.cc"
 set(INCLUDE_DIRS "." "display" "display/lvgl_display" "display/lvgl_display/jpg" "audio" "audio/demuxer" "protocols")
 
 if(CONFIG_PASSPORT_DICTATION)
-    list(APPEND SOURCES "dictation_bridge.cc" "dictation_application.cc")
+    list(APPEND SOURCES "dictation_bridge.cc" "dictation_application.cc" "dictation_cloud.cc" "dictation_setup.cc")
+    set(DICTATION_WEB_FILE "dictation_setup.html")
 endif()
 
 # Add only the common hardware layer required by the FoloToy AI Passport board.
@@ -308,9 +309,11 @@ if(CONFIG_BOARD_TYPE_ESP32_P4_FUNCTION_EV_BOARD)
 endif()
 idf_component_register(SRCS ${SOURCES}
                     EMBED_FILES ${LANG_SOUNDS} ${COMMON_SOUNDS}
+                    EMBED_TXTFILES ${DICTATION_WEB_FILE}
                     INCLUDE_DIRS ${INCLUDE_DIRS}
                     WHOLE_ARCHIVE
                     PRIV_REQUIRES
+                        esp_http_server
                         esp_pm
                         esp_psram
                         esp_netif

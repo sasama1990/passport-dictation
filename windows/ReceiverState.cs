@@ -18,6 +18,15 @@ internal sealed class ReceiverState
     public string Token { get; set; } = Convert.ToHexString(RandomNumberGenerator.GetBytes(32)).ToLowerInvariant();
     public string DeviceId { get; set; } = "";
     public List<Receipt> Receipts { get; set; } = [];
+    public CloudSettings Cloud { get; set; } = new();
+}
+
+internal sealed record CloudSettings
+{
+    public bool Enabled { get; init; }
+    public string Url { get; init; } = RelayClient.DefaultUrl;
+    public string Token { get; init; } = Convert.ToHexString(RandomNumberGenerator.GetBytes(32)).ToLowerInvariant();
+    public string PairNonce { get; init; } = Guid.NewGuid().ToString("N");
 }
 
 internal sealed class StateStore
@@ -44,6 +53,26 @@ internal sealed class StateStore
     public (string ReceiverId, string DeviceId, string Token) Pairing
     {
         get { lock (gate) return (state.ReceiverId, state.DeviceId, state.Token); }
+    }
+
+    public CloudSettings Cloud
+    {
+        get { lock (gate) return state.Cloud; }
+    }
+
+    public void SetCloud(CloudSettings settings)
+    {
+        lock (gate)
+        {
+            var previous = state.Cloud;
+            state.Cloud = settings;
+            try { SaveLocked(); }
+            catch
+            {
+                state.Cloud = previous;
+                throw;
+            }
+        }
     }
 
     public void Pair(string deviceId)

@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.openai/
+.sites-runtime/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+.env
+*.log

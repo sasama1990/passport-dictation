@@ -112,6 +112,7 @@ public:
 #ifdef CONFIG_PASSPORT_DICTATION
     void StartDictation();
     void StopDictation();
+    void OpenDictationSetup();
 #endif
 
     void Reboot();

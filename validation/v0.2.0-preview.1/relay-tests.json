@@ -1,0 +1,18 @@
+{
+  "success": true,
+  "test_groups": 7,
+  "passed": [
+    "pairing creation and redemption can be retried without rotating credentials",
+    "Unicode commands, concurrent retries and acknowledgements are idempotent",
+    "roles and rooms are isolated and repairing revokes the previous device",
+    "the pending queue stays bounded during concurrent unique requests",
+    "offline and expired commands cannot be replayed or returned to the PC",
+    "invalid input is bounded and cannot consume a valid command",
+    "pairing survives a relay process restart"
+  ],
+  "worker_sha256": "e63b463776b4cf0bef3f356b3e98c0005c6438eb6eb4891781422beaf4fc4d39",
+  "deployed_worker_matches_source": true,
+  "relay_url": "https://passport-dictation-relay-sasama.gabledhill.chatgpt.site",
+  "relay_protocol_version": 2,
+  "hosting_saved_version": 2
+}
