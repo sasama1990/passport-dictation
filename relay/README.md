@@ -1,10 +1,10 @@
 # Passport Dictation relay
 
-This Worker forwards dictation control commands and recognized text between the device and Windows over outbound HTTPS connections. It uses one D1 database binding named `DB`. The shipped clients use the hosted service below.
+This relay forwards dictation control commands and recognized text between the device and Windows. The standalone Node service uses persistent SQLite storage. The same request handlers also support a Worker with a D1 binding named `DB`. The shipped clients use the service below.
 
-[Default hosted relay](https://passport-dictation-relay-sasama.gabledhill.chatgpt.site)
+[Default hosted relay](http://8.133.186.187:23000/passport-dictation)
 
-The default hosting entry returned HTTP 403 on the tested mainland direct connection and on the physical device. A replacement entry has not been deployed. Both endpoints must be able to reach the selected relay for cross-network use.
+The default service runs on a mainland server at `http://8.133.186.187:23000/passport-dictation`. It uses HTTP as selected for this deployment. Both endpoints retain the complete port and project path. Upgrades from the former default require re-pairing.
 
 ## Local development
 
@@ -16,11 +16,11 @@ npm test
 npm run dev
 ```
 
-The development adapter listens on loopback port 18767 and uses an in-memory SQLite database. Set `DATABASE_PATH` to a file outside the source checkout for persistent local testing. `HOST` and `PORT` configure the listener. Normal clients require an HTTPS relay. The headless protocol harness accepts loopback HTTP for local tests.
+The development adapter listens on loopback port 18767 and uses an in-memory SQLite database. Set `DATABASE_PATH` to a file outside the source checkout for persistent local testing. `HOST` and `PORT` configure the listener. Normal clients and the headless protocol harness accept HTTP or HTTPS, including project subpaths.
 
 ## Deployment
 
-Run `npm run build` to emit `dist/server/index.js`, a Cloudflare Worker ES module. Configure a D1 database binding named `DB` and apply the generated migrations in `drizzle/` before serving requests. Keep the database and authentication state private. Use a public HTTPS origin accessible from both networks and configure that same origin on the PC and device.
+Run `npm run build` to emit `dist/server/index.js`, a Cloudflare Worker ES module. Configure a D1 database binding named `DB` and apply the generated migrations in `drizzle/` before serving requests. Keep the database and authentication state private. Use a public HTTP or HTTPS service address accessible from both networks and configure that same address on the PC and device.
 
 The schema is defined in `db/schema.ts`. After a schema change, run `npm run db:generate`, review its generated migration, and apply it through the hosting platform's migration workflow. A Sites deployment declares `d1` as `DB` in its own `.openai/hosting.json` and includes the generated `drizzle/` directory in its deployment archive.
 
@@ -43,6 +43,27 @@ Utterance IDs contain 8–64 ASCII letters, digits, underscores or hyphens. Devi
 
 Payload hashes and saved acknowledgements make retries idempotent. Windows also saves its delivery claim before entering text, so an interrupted delivery becomes `uncertain` after restart. An operator should inspect the input result when that occurs.
 
-The relay temporarily stores recognized text in plaintext and transports it over HTTPS. Acknowledgement clears the command's text. Expiry blocks later delivery. Command rows older than expiry plus two minutes are removed opportunistically during receiver activity, in bounded batches. Inactive rooms expire after 30 days and are also cleaned during activity. The service logs request failure types only. It carries recognized text and control messages, while speech recognition uses the device's separate XiaoZhi cloud connection.
+The relay temporarily stores recognized text in plaintext and transports it using the configured HTTP or HTTPS address. The shipped default uses HTTP. Acknowledgement clears the command's text. Expiry blocks later delivery. Command rows older than expiry plus two minutes are removed opportunistically during receiver activity, in bounded batches. Inactive rooms expire after 30 days and are also cleaned during activity. The service logs request failure types only. It carries recognized text and control messages, while speech recognition uses the device's separate XiaoZhi cloud connection.
 
 Pair-code redemption and room creation have per-IP rate limits. Receiver presence expires after 25 seconds without a poll. Re-pairing or changing the relay requires updating both endpoints' settings.
+
+## Standalone server deployment
+
+The current server uses `/jjjworkspace/passport-dictation` with `current` pointing to an immutable directory under `releases/`. Its dedicated Node runtime lives in `runtime/node/`, SQLite in `data/relay.sqlite`, and deployment records in `deployments/`.
+
+`deploy/passport-dictation.service` runs the listener at `127.0.0.1:18767` as the `passport-dictation` service account. The service is enabled at boot and restarts on failure. It can write only to its data directory. The current runtime is Node 22.23.4, independently copied with its license from the server's existing runtime.
+
+The shared OpenResty container `jjjworkspace-web` serves port `23000` with `/jjjworkspace` mounted read-only. Its main configuration includes `/jjjworkspace/.hosting/projects.d/*.conf`. The project snippet is `deploy/passport-dictation.conf`, installed as `/jjjworkspace/.hosting/projects.d/passport-dictation.conf`. It strips `/passport-dictation/` before forwarding to the backend, retains authorization headers and query strings, disables response caching and buffering, and passes the actual client IP for rate limiting.
+
+Additional projects use their own directories and uniquely named snippets in the same include directory. Static projects can use an alias. Applications can use their own loopback ports and path-prefixed proxy locations. Acquire `/jjjworkspace/.hosting/publish.lock` before changing shared routing, validate the configuration, reload it and wait for the new route's health check to succeed.
+
+```sh
+sudo systemctl status passport-dictation.service
+sudo journalctl -u passport-dictation.service -n 50
+sudo systemctl restart passport-dictation.service
+sudo docker exec jjjworkspace-web /usr/local/openresty/bin/openresty -t -c /jjjworkspace/.hosting/nginx.conf
+sudo docker exec jjjworkspace-web /usr/local/openresty/bin/openresty -s reload -c /jjjworkspace/.hosting/nginx.conf
+curl http://127.0.0.1:23000/passport-dictation/health
+```
+
+Service restart and pairing persistence have been verified. The complete voice-to-native-input workflow still requires physical-device testing.

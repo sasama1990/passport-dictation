@@ -9,18 +9,40 @@ internal static class ConnectionFailureTests
 {
     public static async Task RunAsync(string directory, Action<bool, string> check)
     {
+        check(RelayClient.NormalizeUrl("http://8.133.186.187:23000/passport-dictation/") == RelayClient.DefaultUrl,
+            "HTTP relay URLs preserve the project path and normalize the trailing slash");
+        check(RelayClient.NormalizeUrl("https://example.com/project/") == "https://example.com/project",
+            "Existing HTTPS project URLs remain supported");
+        var invalidUrls = new[] { "ftp://example.com", "http://name:secret@example.com", "http://example.com/?key=1", "http://example.com/#key" };
+        check(invalidUrls.All(value =>
+        {
+            try { RelayClient.NormalizeUrl(value); return false; }
+            catch (ArgumentException) { return true; }
+        }), "Relay URL validation still rejects credentials, queries, fragments and unsupported schemes");
+        var legacyDirectory = Path.Combine(directory, "legacy-relay");
+        var legacy = new StateStore(legacyDirectory);
+        legacy.Pair("02:00:00:00:00:04");
+        var lanPairing = legacy.Pairing;
+        legacy.SetCloud(legacy.Cloud with { Url = RelayClient.LegacyDefaultUrl, Enabled = true });
+        legacy.Claim("migration_receipt_01", new string('a', 64));
+        legacy.Finish("migration_receipt_01", "submitted");
+        var migrated = new StateStore(legacyDirectory);
+        check(migrated.Cloud.Url == RelayClient.DefaultUrl && !migrated.Cloud.Enabled
+            && migrated.Pairing == lanPairing && migrated.FindReceipt("migration_receipt_01")?.Status == "submitted",
+            "Legacy default migration requests re-pairing and preserves LAN credentials and delivery receipts");
+
         var builder = WebApplication.CreateSlimBuilder();
         builder.Logging.ClearProviders();
         await using var server = builder.Build();
         server.Urls.Add("http://127.0.0.1:0");
         var pairingRequests = 0;
-        server.MapPost("/v1/pairing", (HttpContext context) =>
+        server.MapPost("/passport-dictation/v1/pairing", (HttpContext context) =>
         {
             Interlocked.Increment(ref pairingRequests);
             context.Response.StatusCode = 403;
             return context.Response.WriteAsync("<html>Access blocked</html>");
         });
-        server.MapGet("/v1/receiver/{room}/next", (HttpContext context) =>
+        server.MapGet("/passport-dictation/v1/receiver/{room}/next", (HttpContext context) =>
         {
             context.Response.StatusCode = 403;
             return context.Response.WriteAsync("<html>Access blocked</html>");
@@ -29,12 +51,12 @@ internal static class ConnectionFailureTests
         try
         {
             var store = new StateStore(Path.Combine(directory, "blocked-relay"));
-            var settings = store.Cloud with { Url = server.Urls.Single(), Enabled = true };
+            var settings = store.Cloud with { Url = server.Urls.Single() + "/passport-dictation", Enabled = true };
             var forbidden = false;
             try
             {
                 await RelayClient.OpenPairingAsync(store.Pairing.ReceiverId, settings,
-                    CancellationToken.None, testLoopback: true);
+                    CancellationToken.None);
             }
             catch (HttpRequestException exception)
             {
@@ -44,7 +66,7 @@ internal static class ConnectionFailureTests
 
             var notice = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
             var receiver = new DictationReceiver(store, new ProtocolInput());
-            await using var client = new RelayClient(store.Pairing.ReceiverId, settings, receiver, testLoopback: true)
+            await using var client = new RelayClient(store.Pairing.ReceiverId, settings, receiver)
             {
                 Notice = message => notice.TrySetResult(message),
             };

@@ -28,8 +28,9 @@ bool HexString(const std::string& value, size_t size) {
 }  // namespace
 
 bool DictationBridge::ValidRelayUrl(const std::string& url) {
-    return url.starts_with("https://") && url.size() > 8 && url.size() <= 192 &&
-           std::all_of(url.begin(), url.end(), [](unsigned char letter) {
+    return ((url.starts_with("https://") && url.size() > 8) ||
+            (url.starts_with("http://") && url.size() > 7)) &&
+           url.size() <= 192 && std::all_of(url.begin(), url.end(), [](unsigned char letter) {
                return std::isalnum(letter) ||
                       std::string_view(":/._-").find(letter) != std::string_view::npos;
            });

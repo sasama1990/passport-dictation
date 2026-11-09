@@ -1,7 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import { readdirSync, readFileSync } from "node:fs";
 
-// Local development adapter. Production uses the hosted D1 binding.
+// SQLite adapter for local development and the standalone Node service.
 export function openDatabase(filename = ":memory:") {
   const database = new DatabaseSync(filename);
   database.exec("PRAGMA foreign_keys = ON");

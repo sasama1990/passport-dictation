@@ -26,13 +26,13 @@ internal static class RelaySmokeTests
         check(saveFailed && store.Cloud == settings
             && new StateStore(Path.Combine(directory, "cloud")).Cloud == settings,
             "Failed cloud settings writes preserve the previous configuration");
-        var pairing = await RelayClient.OpenPairingAsync(originalPairing.ReceiverId, settings, CancellationToken.None, testLoopback: true);
-        var repeat = await RelayClient.OpenPairingAsync(originalPairing.ReceiverId, settings, CancellationToken.None, testLoopback: true);
+        var pairing = await RelayClient.OpenPairingAsync(originalPairing.ReceiverId, settings, CancellationToken.None);
+        var repeat = await RelayClient.OpenPairingAsync(originalPairing.ReceiverId, settings, CancellationToken.None);
         check(pairing.Code == repeat.Code, "Cloud pairing request is idempotent");
 
         const string deviceId = "02:00:00:00:00:02";
         var deviceToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(32)).ToLowerInvariant();
-        using var device = new HttpClient { BaseAddress = new Uri(RelayClient.NormalizeUrl(url, testLoopback: true) + "/"), Timeout = TimeSpan.FromSeconds(15) };
+        using var device = new HttpClient { BaseAddress = new Uri(RelayClient.NormalizeUrl(url) + "/"), Timeout = TimeSpan.FromSeconds(15) };
         using var paired = await device.PostAsJsonAsync("v1/pair", new
         {
             code = pairing.Code, device_id = deviceId, device_token = deviceToken,
@@ -50,7 +50,7 @@ internal static class RelaySmokeTests
 
         var input = new SimulatedInput();
         var receiver = new DictationReceiver(store, input);
-        await using (var client = new RelayClient(originalPairing.ReceiverId, settings, receiver, testLoopback: true))
+        await using (var client = new RelayClient(originalPairing.ReceiverId, settings, receiver))
         {
             client.Start();
             check(await Send("begin", "cloud_utterance_01") == "ready", "Cloud begin reaches the Windows receiver");
@@ -83,7 +83,7 @@ internal static class RelaySmokeTests
 
         var restartedInput = new SimulatedInput();
         var restartedReceiver = new DictationReceiver(new StateStore(Path.Combine(directory, "cloud")), restartedInput);
-        await using var restartedClient = new RelayClient(originalPairing.ReceiverId, reloaded.Cloud, restartedReceiver, testLoopback: true);
+        await using var restartedClient = new RelayClient(originalPairing.ReceiverId, reloaded.Cloud, restartedReceiver);
         restartedClient.Start();
         check(await Send("text", "cloud_utterance_01", "跨网络语音输入。Hello 123 🐾") == "submitted" && restartedInput.Count == 0,
             "Cloud replay after receiver restart remains idempotent");

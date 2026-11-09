@@ -26,13 +26,11 @@ internal sealed class RelaySettingsForm : Form
         MinimizeBox = false;
         address.Text = store.Cloud.Url;
         var layout = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(24), ColumnCount = 1, RowCount = 6 };
-        layout.Controls.Add(new Label { Text = "中继地址（HTTPS）", AutoSize = true });
+        layout.Controls.Add(new Label { Text = "中继地址（HTTP / HTTPS，可包含项目路径）", AutoSize = true });
         layout.Controls.Add(address);
         layout.Controls.Add(code);
         layout.Controls.Add(information);
-        information.Text = (store.Cloud.Url == RelayClient.DefaultUrl
-            ? "默认中继在已测国内直连线路上返回 403，跨网需要两端均可访问的中继地址。\n" : "")
-            + "生成配对码后，手机连接 Passport 的配网热点，打开 http://192.168.4.1:18766，输入配对码并保存，再按页面入口完成 Wi-Fi 配网。";
+        information.Text = "首次使用或更换中继后，请生成新配对码。长按设备上键打开设置，在屏幕显示的地址中保存同一个中继地址和新配对码。首次配网时使用 http://192.168.4.1:18766。";
         var actions = new FlowLayoutPanel { AutoSize = true, Dock = DockStyle.Fill };
         var copy = new Button { Text = "复制配对码", AutoSize = true };
         var close = new Button { Text = "关闭", AutoSize = true };

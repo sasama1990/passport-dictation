@@ -30,7 +30,8 @@ internal sealed class RelayPoll
 
 internal sealed class RelayClient : IAsyncDisposable
 {
-    public const string DefaultUrl = "https://passport-dictation-relay-sasama.gabledhill.chatgpt.site";
+    public const string DefaultUrl = "http://8.133.186.187:23000/passport-dictation";
+    public const string LegacyDefaultUrl = "https://passport-dictation-relay-sasama.gabledhill.chatgpt.site";
     private readonly DictationReceiver receiver;
     private readonly string room;
     private readonly HttpClient http;
@@ -38,27 +39,27 @@ internal sealed class RelayClient : IAsyncDisposable
     private Task? running;
     public Action<string>? Notice { get; set; }
 
-    public RelayClient(string room, CloudSettings settings, DictationReceiver receiver, bool testLoopback = false)
+    public RelayClient(string room, CloudSettings settings, DictationReceiver receiver)
     {
         this.room = room;
         this.receiver = receiver;
-        http = CreateHttp(settings, testLoopback);
+        http = CreateHttp(settings);
     }
 
-    public static string NormalizeUrl(string value, bool testLoopback = false)
+    public static string NormalizeUrl(string value)
     {
         if (value.Length > 192 || !Uri.TryCreate(value.Trim().TrimEnd('/') + "/", UriKind.Absolute, out var uri)
             || uri.UserInfo.Length > 0 || uri.Query.Length > 0 || uri.Fragment.Length > 0
-            || !(uri.Scheme == "https" || testLoopback && uri.Scheme == "http" && uri.IsLoopback))
-            throw new ArgumentException("请输入 HTTPS 中继地址。", nameof(value));
+            || uri.Scheme is not ("http" or "https"))
+            throw new ArgumentException("请输入 HTTP 或 HTTPS 中继地址。", nameof(value));
         return uri.AbsoluteUri.TrimEnd('/');
     }
 
-    private static HttpClient CreateHttp(CloudSettings settings, bool testLoopback)
+    private static HttpClient CreateHttp(CloudSettings settings)
     {
         var result = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false })
         {
-            BaseAddress = new Uri(NormalizeUrl(settings.Url, testLoopback) + "/"),
+            BaseAddress = new Uri(NormalizeUrl(settings.Url) + "/"),
             Timeout = TimeSpan.FromSeconds(15),
             MaxResponseContentBufferSize = 65536,
         };
@@ -67,9 +68,9 @@ internal sealed class RelayClient : IAsyncDisposable
     }
 
     public static async Task<RelayPairing> OpenPairingAsync(string room, CloudSettings settings,
-        CancellationToken cancellationToken, bool testLoopback = false)
+        CancellationToken cancellationToken)
     {
-        using var client = CreateHttp(settings, testLoopback);
+        using var client = CreateHttp(settings);
         for (var attempt = 0; ; attempt++)
         {
             try

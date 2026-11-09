@@ -9,9 +9,9 @@ config PASSPORT_DICTATION
         the paired Windows receiver. This variant uses manual listening.
 
 config PASSPORT_RELAY_URL
-    string "Passport HTTPS relay URL"
+    string "Passport HTTP or HTTPS relay URL"
     depends on PASSPORT_DICTATION
-    default "https://passport-dictation-relay-sasama.gabledhill.chatgpt.site"
+    default "http://8.133.186.187:23000/passport-dictation"
     help
         Default public relay used for cross-network pairing and text delivery.
 

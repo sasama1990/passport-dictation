@@ -209,7 +209,7 @@ internal sealed class MainForm : Form
             }
             catch (ArgumentException)
             {
-                cloudStatus.Text = "请在跨网络设置中配置 HTTPS 中继地址。";
+                cloudStatus.Text = "请在跨网络设置中配置 HTTP 或 HTTPS 中继地址。";
             }
         }
         finally { relayGate.Release(); }

@@ -1,0 +1,27 @@
+[Unit]
+Description=Passport Dictation relay
+After=network.target
+
+[Service]
+Type=simple
+User=passport-dictation
+Group=passport-dictation
+WorkingDirectory=/jjjworkspace/passport-dictation/current
+ExecStart=/jjjworkspace/passport-dictation/runtime/node/bin/node /jjjworkspace/passport-dictation/current/server.mjs
+Environment=HOST=127.0.0.1
+Environment=PORT=18767
+Environment=DATABASE_PATH=/jjjworkspace/passport-dictation/data/relay.sqlite
+Environment=TRUST_PROXY=1
+Environment=NODE_ENV=production
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=20
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/jjjworkspace/passport-dictation/data
+
+[Install]
+WantedBy=multi-user.target

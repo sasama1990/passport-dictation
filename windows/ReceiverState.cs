@@ -45,6 +45,8 @@ internal sealed class StateStore
             : new ReceiverState();
         if (state.ReceiverId.Length != 32 || state.Token.Length != 64)
             throw new InvalidDataException("配对配置损坏，请保留配置文件后重新配对。");
+        if (state.Cloud.Url.TrimEnd('/') == RelayClient.LegacyDefaultUrl)
+            state.Cloud = state.Cloud with { Url = RelayClient.DefaultUrl, Enabled = false };
         foreach (var receipt in state.Receipts.Where(receipt => receipt.Status == "claimed"))
             receipt.Status = "uncertain";
         SaveLocked();
