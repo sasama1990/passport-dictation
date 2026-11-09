@@ -40,6 +40,25 @@ std::string Hex(const uint8_t* data, size_t size) {
     }
     return result;
 }
+
+const char* ConnectionCode(DictationBridge::ConnectionState state) {
+    using State = DictationBridge::ConnectionState;
+    switch (state) {
+        case State::Unpaired:
+            return "not_paired";
+        case State::Pairing:
+            return "pairing_cloud";
+        case State::Ready:
+            return "ready";
+        case State::NetworkError:
+            return "network_error";
+        case State::RelayForbidden:
+            return "relay_forbidden";
+        case State::PairingExpired:
+            return "pairing_expired";
+    }
+    return "not_paired";
+}
 }  // namespace
 
 DictationBridge& DictationBridge::GetInstance() {
@@ -82,7 +101,42 @@ bool DictationBridge::Enqueue(const std::string& action, const std::string& id,
     return true;
 }
 
-bool DictationBridge::Begin(const std::string& id) { return Enqueue("begin", id, ""); }
+std::string DictationBridge::Begin(const std::string& id) {
+    if (queue_ == nullptr)
+        return "service_unavailable";
+    if (!WifiManager::GetInstance().IsConnected())
+        return "wifi_required";
+    const auto state = connection_state_.load();
+    if (state != ConnectionState::Ready)
+        return ConnectionCode(state);
+    auto expected = BeginPhase::Idle;
+    if (!begin_phase_.compare_exchange_strong(expected, BeginPhase::Pending))
+        return "connection_busy";
+    if (!Enqueue("begin", id, "")) {
+        begin_phase_.store(BeginPhase::Idle);
+        return "queue_full";
+    }
+    return "queued";
+}
+
+void DictationBridge::SetConnectionState(ConnectionState state) {
+    if (connection_state_.exchange(state) != state && callback_)
+        callback_("connection", "", ConnectionCode(state));
+}
+
+void DictationBridge::RefreshConnectionState() {
+    if (cloud_enabled_) {
+        if (!cloud_receiver_id_.empty() && cloud_token_.size() == 64)
+            SetConnectionState(ConnectionState::Ready);
+        else if (!cloud_pair_code_.empty())
+            SetConnectionState(ConnectionState::Pairing);
+        else
+            SetConnectionState(ConnectionState::Unpaired);
+    } else {
+        SetConnectionState(!host_.empty() && token_.size() == 64 ? ConnectionState::Ready
+                                                                 : ConnectionState::Unpaired);
+    }
+}
 
 bool DictationBridge::SendText(const std::string& id, const std::string& text) {
     return Enqueue("text", id, text);
@@ -91,6 +145,16 @@ bool DictationBridge::SendText(const std::string& id, const std::string& text) {
 void DictationBridge::Cancel(const std::string& id) {
     if (!id.empty()) {
         Enqueue("cancel", id, "");
+    }
+}
+
+void DictationBridge::CancelPendingBegin(const std::string& id) {
+    // The application calls this only for its current preparing utterance.
+    // Keep the single begin slot occupied until the worker finishes cleanup.
+    auto expected = BeginPhase::Pending;
+    if (!begin_phase_.compare_exchange_strong(expected, BeginPhase::Cancelled) &&
+        expected == BeginPhase::Idle) {
+        Cancel(id);
     }
 }
 
@@ -111,6 +175,7 @@ void DictationBridge::Run() {
         host_ = settings.GetString("host");
         port_ = settings.GetInt("port", 18765);
     }
+    RefreshConnectionState();
     // WifiManager initializes esp_netif and its tcpip thread. Creating a socket
     // before that point asserts in lwIP because the TCP/IP mailbox is absent.
     while (!WifiManager::GetInstance().IsInitialized()) {
@@ -136,6 +201,7 @@ void DictationBridge::Run() {
             cloud_token_.clear();
             cloud_pair_code_.clear();
             SaveCloud();
+            RefreshConnectionState();
             setup_until_ms_.store(NowMs() + 600000);
             last_discovery_ms_ = -10000;
             if (callback_) {
@@ -146,10 +212,6 @@ void DictationBridge::Run() {
             StartSetupServer();
         } else {
             StopSetupServer();
-        }
-        if (cloud_enabled_ && cloud_receiver_id_.empty() && !cloud_pair_code_.empty() &&
-            WifiManager::GetInstance().IsConnected() && NowMs() - last_pair_ms_ >= 5000) {
-            PairCloud();
         }
         if (!cloud_enabled_ &&
             NowMs() - last_discovery_ms_ >= (receiver_id_.empty() ? 1000 : 10000)) {
@@ -164,6 +226,10 @@ void DictationBridge::Run() {
                 ConfigureCloud(*job);
                 continue;
             }
+            // Cancellation must remain useful even when an earlier request
+            // consumed its queue deadline. The receiver matches the exact ID.
+            if (job->action == "cancel")
+                job->created_ms = NowMs();
             if (!cloud_enabled_ && host_.empty()) {
                 Discover();
                 for (int attempt = 0; attempt < 8 && host_.empty(); attempt++) {
@@ -171,10 +237,27 @@ void DictationBridge::Run() {
                     PollDiscovery();
                 }
             }
-            auto status = Post(*job);
+            const bool begin_cancelled =
+                job->action == "begin" && begin_phase_.load() == BeginPhase::Cancelled;
+            auto status = begin_cancelled ? std::string("cancelled") : Post(*job);
+            if (job->action == "begin") {
+                auto expected = BeginPhase::Pending;
+                if (!begin_phase_.compare_exchange_strong(expected, BeginPhase::Idle)) {
+                    if (!begin_cancelled) {
+                        Job cancel{"cancel", job->id, "", NowMs()};
+                        Post(cancel);
+                    }
+                    begin_phase_.store(BeginPhase::Idle);
+                    status = "cancelled";
+                }
+            }
+            ESP_LOGI(kTag, "Command %s finished: %s", job->action.c_str(), status.c_str());
             if (callback_) {
                 callback_(job->action, job->id, status);
             }
+        } else if (cloud_enabled_ && cloud_receiver_id_.empty() && !cloud_pair_code_.empty() &&
+                   WifiManager::GetInstance().IsConnected() && NowMs() - last_pair_ms_ >= 5000) {
+            PairCloud();
         }
     }
 }
@@ -292,6 +375,7 @@ void DictationBridge::PollDiscovery() {
         if (paired_now && callback_) {
             callback_("pair", "", "paired");
         }
+        RefreshConnectionState();
     }
 }
 
@@ -331,6 +415,9 @@ std::string DictationBridge::Post(const Job& job) {
         }
         if (code == 401) {
             return "not_paired";
+        }
+        if (code == 403) {
+            return "relay_forbidden";
         }
         std::unique_ptr<cJSON, decltype(&cJSON_Delete)> reply(cJSON_Parse(response.body.c_str()),
                                                               cJSON_Delete);

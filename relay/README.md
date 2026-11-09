@@ -4,6 +4,8 @@ This Worker forwards dictation control commands and recognized text between the 
 
 [Default hosted relay](https://passport-dictation-relay-sasama.gabledhill.chatgpt.site)
 
+The default hosting entry returned HTTP 403 on the tested mainland direct connection and on the physical device. A replacement entry has not been deployed. Both endpoints must be able to reach the selected relay for cross-network use.
+
 ## Local development
 
 Use Node.js 22.13 or newer. Production code has no npm dependencies. Development dependencies generate database migrations.

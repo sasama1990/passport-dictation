@@ -213,6 +213,7 @@ void LvglDisplay::UpdateStatusBar(bool update_all) {
         }
     }
 
+#ifndef CONFIG_PASSPORT_DICTATION
     // Update time — show HH:MM when idle; refresh immediately on state
     // transitions (update_all=true) and on every minute change thereafter.
     if (app.GetDeviceState() == kDeviceStateIdle) {
@@ -233,6 +234,7 @@ void LvglDisplay::UpdateStatusBar(bool update_all) {
         // Reset so the clock re-appears immediately when idle resumes.
         last_displayed_clock_min_ = -1;
     }
+#endif
 
     esp_pm_lock_acquire(pm_lock_);
     // Update battery icon

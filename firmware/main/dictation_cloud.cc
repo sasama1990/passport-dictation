@@ -5,6 +5,7 @@
 #include <memory>
 #include <string_view>
 
+#include <esp_log.h>
 #include <esp_timer.h>
 #include <cJSON.h>
 #include <wifi_manager.h>
@@ -133,6 +134,7 @@ void DictationBridge::ConfigureCloud(const Job& job) {
             callback_("pair", "", "storage_error");
         return;
     }
+    RefreshConnectionState();
     if (callback_)
         callback_("pair", "", cloud_enabled_ ? "pairing_cloud" : "pairing");
 }
@@ -154,8 +156,17 @@ void DictationBridge::PairCloud() {
     const std::string body(serialized);
     cJSON_free(serialized);
     auto response = Request(relay_url_ + "/v1/pair", body, "", 4000);
-    if (response.code == 0 || response.code >= 500)
+    ESP_LOGI("DictationBridge", "Pairing HTTP status: %d", response.code);
+    // Schedule retries from completion, including DNS and TLS connection time.
+    last_pair_ms_ = esp_timer_get_time() / 1000;
+    if (response.code == 0 || response.code >= 500) {
+        SetConnectionState(ConnectionState::NetworkError);
         return;
+    }
+    if (response.code == 403) {
+        SetConnectionState(ConnectionState::RelayForbidden);
+        return;
+    }
     std::unique_ptr<cJSON, decltype(&cJSON_Delete)> reply(cJSON_Parse(response.body.c_str()),
                                                           cJSON_Delete);
     const auto room = Field(reply.get(), "receiver_id");
@@ -166,13 +177,17 @@ void DictationBridge::PairCloud() {
             return;
         }
         setup_until_ms_.store(0);
+        SetConnectionState(ConnectionState::Ready);
         if (callback_)
             callback_("pair", "", "paired_cloud");
     } else if (response.code == 400 || response.code == 409) {
         cloud_pair_code_.clear();
         SaveCloud();
+        SetConnectionState(ConnectionState::PairingExpired);
         if (callback_)
             callback_("pair", "", "pairing_expired");
+    } else {
+        SetConnectionState(ConnectionState::NetworkError);
     }
 }
 

@@ -64,7 +64,7 @@ internal sealed class MainForm : Form
         var test = new Button { Text = "打开测试输入框", AutoSize = true };
         actions.Controls.AddRange([pairing, cloudSettings, pause, test]);
         layout.Controls.Add(actions);
-        hint.Text = "选择局域网配对或跨网络设置。把光标放入目标输入框，按住设备 OK 键说话，松开后等待文字输入。识别期间保持原输入位置。";
+        hint.Text = "先完成配对，把光标放入目标输入框。按住设备 OK，等提示音及“可以说话”后开始说话，松开后等待识别和电脑确认。全过程保持原输入框与光标位置。";
         hint.Margin = new Padding(0, 0, 0, 12);
         layout.Controls.Add(hint);
         layout.Controls.Add(preview);
@@ -219,7 +219,7 @@ internal sealed class MainForm : Form
     {
         status.Text = notice.Status switch
         {
-            "listening" => "录音中，等待云端识别文字…",
+            "listening" => "输入位置已准备，请按设备提示开始说话。正在等待识别文字…",
             "submitted" => "文字已提交到目标输入框",
             "focus_changed" => "输入位置已变化，请复制下方文字后粘贴",
             "keyboard_busy" => "键盘快捷键正被按住，请复制下方文字后粘贴",
@@ -227,7 +227,7 @@ internal sealed class MainForm : Form
             "uncertain" => "输入结果待确认，请先检查目标输入框",
             "expired" => "本轮已超时，请复制下方文字后粘贴",
             "unknown_utterance" => "本轮连接已失效，请复制下方文字后粘贴",
-            "cancelled" => "本轮已结束",
+            "cancelled" => "本轮已取消，可按住设备 OK 等提示音后重新录音",
             _ => notice.Status
         };
         if (notice.Text.Length > 0)

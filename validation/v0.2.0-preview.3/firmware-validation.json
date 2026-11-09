@@ -1,0 +1,59 @@
+{
+  "firmware_version": "2.5.0-pd3",
+  "firmware_sha256": "353ebd7bac880993dc5fc36882392753a2e540797c5bbb56c64badafd8a28f63",
+  "build_success": true,
+  "app_partition_free_percent": 23,
+  "segment_checks": {
+    "bootloader.bin": {
+      "offset": "0x0",
+      "bytes": 15040,
+      "sha256": "7e3041f9b2c4e99f02b3c8360f90406a57e083dbe119c5b2a46c92787bcc33fe"
+    },
+    "partition-table.bin": {
+      "offset": "0x8000",
+      "bytes": 3072,
+      "sha256": "3c58cd9a65ffd0586a5f06800fbccc8b0d34697c055a7d6dcf1fb4d47253c472"
+    },
+    "ota_data_initial.bin": {
+      "offset": "0xd000",
+      "bytes": 8192,
+      "sha256": "7d2c7ac4888bfd75cd5f56e8d61f69595121183afc81556c876732fd3782c62f"
+    },
+    "xiaozhi.bin": {
+      "offset": "0x20000",
+      "bytes": 2363872,
+      "sha256": "a3899a7afc5034befd39729ddb4503c0eb12d46fb3729731beffa49d9f2bc504"
+    },
+    "generated_assets.bin": {
+      "offset": "0x600000",
+      "bytes": 1325012,
+      "sha256": "590d532c3c2f547dfa4156465a22421d5eb0698ffc82a5f3165013e28917fe79"
+    }
+  },
+  "format_check_success": true,
+  "ui_glyphs_checked": 143,
+  "missing_ui_glyphs": "",
+  "multiline_instructions_enabled": true,
+  "host_tests": {
+    "tests": 81,
+    "failures": 17,
+    "errors": 23,
+    "same_failure_test_names_as_clean_baseline": true
+  },
+  "device": {
+    "version_observed": true,
+    "boot_observation_seconds": 65,
+    "boot_banners": 1,
+    "panic_detected": false,
+    "nvs_byte_for_byte_preserved": true,
+    "dictation_stages": [
+      "正在配对",
+      "中继拒绝连接"
+    ]
+  },
+  "default_relay_direct_access": "HTTP 403 on the tested Shanghai Telecom direct connection and on the device",
+  "replacement_relay_deployed": false,
+  "physical_button_sequence_validation_pending": true,
+  "complete_voice_to_native_input_validation_pending": true,
+  "wan_end_to_end_validation_pending": true
+}

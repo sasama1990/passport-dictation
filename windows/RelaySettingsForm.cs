@@ -30,7 +30,9 @@ internal sealed class RelaySettingsForm : Form
         layout.Controls.Add(address);
         layout.Controls.Add(code);
         layout.Controls.Add(information);
-        information.Text = "生成配对码后，手机连接 Passport 的配网热点，打开 http://192.168.4.1:18766，输入配对码并保存，再按页面入口完成 Wi-Fi 配网。设备和电脑各自联网即可。";
+        information.Text = (store.Cloud.Url == RelayClient.DefaultUrl
+            ? "默认中继在已测国内直连线路上返回 403，跨网需要两端均可访问的中继地址。\n" : "")
+            + "生成配对码后，手机连接 Passport 的配网热点，打开 http://192.168.4.1:18766，输入配对码并保存，再按页面入口完成 Wi-Fi 配网。";
         var actions = new FlowLayoutPanel { AutoSize = true, Dock = DockStyle.Fill };
         var copy = new Button { Text = "复制配对码", AutoSize = true };
         var close = new Button { Text = "关闭", AutoSize = true };
@@ -90,7 +92,9 @@ internal sealed class RelaySettingsForm : Form
         catch (OperationCanceledException) when (closing.IsCancellationRequested) { }
         catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or ArgumentException or InvalidDataException or IOException or UnauthorizedAccessException)
         {
-            if (!IsDisposed) information.Text = "生成配对码失败，请检查中继地址和网络后重试。" + exception.Message;
+            if (!IsDisposed) information.Text = exception is HttpRequestException or TaskCanceledException or InvalidDataException
+                ? "生成配对码失败。" + RelayClient.ConnectionErrorMessage(exception)
+                : "生成配对码失败。" + exception.Message;
         }
         finally { if (!IsDisposed) { generate.Enabled = true; local.Enabled = true; } }
     }

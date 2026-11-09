@@ -15,6 +15,7 @@ void Check(bool success, string name)
 
 try
 {
+    await ConnectionFailureTests.RunAsync(directory, Check);
     await RelaySmokeTests.RunAsync(args[0], directory, Check);
     var store = new StateStore(Path.Combine(directory, "lan"));
     store.Pair("02:00:00:00:00:03");

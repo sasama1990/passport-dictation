@@ -229,6 +229,9 @@ void Application::Run() {
             SetDeviceState(kDeviceStateIdle);
             Alert(Lang::Strings::ERROR, last_error_message_.c_str(), "cancel",
                   Lang::Sounds::OGG_EXCLAMATION);
+#ifdef CONFIG_PASSPORT_DICTATION
+            ShowDictationStatus("语音连接失败", "检查联网和小智绑定\n松开OK后重新录音");
+#endif
         }
 
         if (bits & MAIN_EVENT_NETWORK_CONNECTED) {
@@ -629,8 +632,12 @@ void Application::InitializeProtocol() {
                 CancelDictation("云端连接已断开，请重试");
             }
 #endif
+#ifdef CONFIG_PASSPORT_DICTATION
+            ShowDictationStatus();
+#else
             auto display = Board::GetInstance().GetDisplay();
             display->SetChatMessage("system", "");
+#endif
             SetDeviceState(kDeviceStateIdle);
         });
     });
@@ -1089,14 +1096,11 @@ void Application::HandleStateChangedEvent() {
             // otherwise wipe the status, emotion, and chat message.
             if (last_error_message_.empty()) {
 #ifdef CONFIG_PASSPORT_DICTATION
-                if (dictation_phase_ == DictationPhase::Waiting) {
-                    display->SetStatus("识别中");
-                    display->SetEmotion("thinking");
-                } else {
-                    display->SetStatus("电脑听写");
-                    display->SetEmotion("neutral");
-                    display->SetChatMessage("system", "按住OK说话，松开结束");
-                }
+                ShowDictationStatus();
+                display->SetEmotion(dictation_phase_ == DictationPhase::Waiting ||
+                                            dictation_phase_ == DictationPhase::Delivering
+                                        ? "thinking"
+                                        : "neutral");
 #else
                 display->SetStatus(Lang::Strings::STANDBY);
                 display->ClearChatMessages();  // Clear messages first
@@ -1108,9 +1112,14 @@ void Application::HandleStateChangedEvent() {
             audio_service_.EnableWakeWordDetection(true);
             break;
         case kDeviceStateConnecting:
+#ifdef CONFIG_PASSPORT_DICTATION
+            ShowDictationStatus();
+            display->SetEmotion("neutral");
+#else
             display->SetStatus(Lang::Strings::CONNECTING);
             display->SetEmotion("neutral");
             display->SetChatMessage("system", "");
+#endif
             break;
         case kDeviceStateListening:
             display->SetStatus(Lang::Strings::LISTENING);
@@ -1170,12 +1179,15 @@ void Application::StartListeningAudio() {
     dictation_phase_ = DictationPhase::Recording;
     dictation_phase_ms_ = esp_timer_get_time() / 1000;
     dictation_cloud_session_ = protocol_->session_id();
-    Board::GetInstance().GetDisplay()->SetChatMessage("system", "正在录音，松开结束");
 #endif
 
     // Send the start listening command
     protocol_->SendStartListening(listening_mode_);
     audio_service_.EnableVoiceProcessing(true);
+
+#ifdef CONFIG_PASSPORT_DICTATION
+    ShowDictationStatus("可以说话", "正在录音，请保持按住OK\n说完松开，等待识别和发送");
+#endif
 
     ConfigureWakeWordForListening();
 

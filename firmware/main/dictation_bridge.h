@@ -13,14 +13,23 @@
 // enqueue bounded jobs and receive results through the supplied callback.
 class DictationBridge {
 public:
+    enum class ConnectionState {
+        Unpaired,
+        Pairing,
+        Ready,
+        NetworkError,
+        RelayForbidden,
+        PairingExpired
+    };
     using ResultCallback =
         std::function<void(const std::string&, const std::string&, const std::string&)>;
 
     static DictationBridge& GetInstance();
     void Start(ResultCallback callback);
-    bool Begin(const std::string& id);
+    std::string Begin(const std::string& id);
     bool SendText(const std::string& id, const std::string& text);
     void Cancel(const std::string& id);
+    void CancelPendingBegin(const std::string& id);
     void ResetPairing();
     bool Configure(bool cloud, const std::string& url, const std::string& code);
     std::string SetupUrl() const;
@@ -36,6 +45,9 @@ private:
     QueueHandle_t queue_ = nullptr;
     ResultCallback callback_;
     std::atomic<bool> reset_pairing_{false};
+    enum class BeginPhase { Idle, Pending, Cancelled };
+    std::atomic<BeginPhase> begin_phase_{BeginPhase::Idle};
+    std::atomic<ConnectionState> connection_state_{ConnectionState::Unpaired};
     std::string device_id_;
     std::string receiver_id_;
     std::string token_;
@@ -61,6 +73,8 @@ private:
 
     bool Enqueue(const std::string& action, const std::string& id, const std::string& text);
     void Run();
+    void SetConnectionState(ConnectionState state);
+    void RefreshConnectionState();
     void Discover();
     void PollDiscovery();
     std::string Post(const Job& job);

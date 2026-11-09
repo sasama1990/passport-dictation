@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -77,11 +78,12 @@ internal sealed class RelayClient : IAsyncDisposable
                     new { receiver_id = room, pair_nonce = settings.PairNonce }, cancellationToken);
                 response.EnsureSuccessStatusCode();
                 var result = await response.Content.ReadFromJsonAsync<RelayPairing>(LocalServer.JsonOptions, cancellationToken);
-                if (result == null || result.Code.Length != 8 || result.ExpiresIn <= 0)
+                if (result == null || result.Code == null || result.Code.Length != 8 || result.ExpiresIn <= 0)
                     throw new InvalidDataException("中继返回了无效配对码。");
                 return result;
             }
-            catch (HttpRequestException) when (attempt < 2 && !cancellationToken.IsCancellationRequested)
+            catch (HttpRequestException exception) when (attempt < 2 && !cancellationToken.IsCancellationRequested
+                && (exception.StatusCode == null || (int)exception.StatusCode >= 500))
             {
                 await Task.Delay(500, cancellationToken);
             }
@@ -89,6 +91,21 @@ internal sealed class RelayClient : IAsyncDisposable
     }
 
     public void Start() => running ??= Task.Run(RunAsync);
+
+    public static string ConnectionErrorMessage(Exception exception) => exception switch
+    {
+        HttpRequestException { StatusCode: HttpStatusCode.Forbidden } =>
+            "中继入口拒绝访问（HTTP 403）。请更换可访问的中继地址，两端使用相同地址后重新配对。",
+        HttpRequestException { StatusCode: HttpStatusCode.Unauthorized } =>
+            "跨网配对凭据已失效（HTTP 401）。请生成新配对码，并在设备设置中保存。",
+        HttpRequestException { StatusCode: HttpStatusCode.TooManyRequests } =>
+            "中继请求受限（HTTP 429），请稍后再试。",
+        HttpRequestException { StatusCode: not null } httpError =>
+            $"中继返回 HTTP {(int)httpError.StatusCode.Value}，请检查服务状态。",
+        TaskCanceledException => "连接中继超时，请检查网络和中继地址。",
+        HttpRequestException => "无法连接中继，请检查网络、DNS 和中继地址。",
+        _ => "中继响应无效，请检查中继地址和服务版本。",
+    };
 
     private async Task RunAsync()
     {
@@ -106,7 +123,8 @@ internal sealed class RelayClient : IAsyncDisposable
                         || !Regex.IsMatch(command.Id ?? "", "^[a-zA-Z0-9_-]{8,64}$")
                         || command.Action is not ("begin" or "text" or "cancel")))
                     throw new InvalidDataException("无效的中继响应。");
-                Notice?.Invoke(result.DeviceId.Length > 0 ? "跨网设备已配对  " + result.DeviceId : "跨网连接已建立，等待设备配对");
+                Notice?.Invoke(result.DeviceId.Length > 0 ? "中继已连接，设备已配对  " + result.DeviceId
+                    : "中继已连接，等待设备配对");
                 foreach (var command in result.Commands)
                 {
                     stop.Token.ThrowIfCancellationRequested();
@@ -139,8 +157,9 @@ internal sealed class RelayClient : IAsyncDisposable
             catch (OperationCanceledException) when (stop.IsCancellationRequested) { break; }
             catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or JsonException or InvalidDataException)
             {
-                Notice?.Invoke("跨网连接中断，正在重连。可在跨网络设置中重新配对。");
-                await Task.Delay(2000, stop.Token);
+                Notice?.Invoke(ConnectionErrorMessage(exception));
+                await Task.Delay(exception is HttpRequestException { StatusCode: HttpStatusCode.Forbidden
+                    or HttpStatusCode.Unauthorized or HttpStatusCode.TooManyRequests } ? 10000 : 2000, stop.Token);
             }
         }
     }

@@ -1,0 +1,27 @@
+{
+  "success": true,
+  "passed": [
+    "Blocked pairing fails immediately without retrying HTTP 403",
+    "Blocked polling identifies the relay access failure in the Windows notice",
+    "Expired credentials have a distinct re-pairing instruction",
+    "Connection failures identify the network and DNS checks",
+    "Cloud settings persist alongside existing LAN credentials",
+    "Failed cloud settings writes preserve the previous configuration",
+    "Cloud pairing request is idempotent",
+    "Simulated device pairs through the relay",
+    "Cloud begin reaches the Windows receiver",
+    "Cloud begin retries preserve the original input target",
+    "Cloud Unicode delivery and concurrent retries inject once",
+    "Cloud delivery protects a changed input field",
+    "Cloud cancellation prevents later input",
+    "Pause blocks cloud recordings",
+    "Queued input respects the monotonic delivery deadline",
+    "Cloud replay after receiver restart remains idempotent",
+    "A restarted Windows receiver reconnects using its saved cloud credentials",
+    "LAN authentication remains required",
+    "LAN begin still captures its input target",
+    "LAN Unicode delivery remains available",
+    "LAN retries remain idempotent"
+  ],
+  "native_input_tested": false
+}

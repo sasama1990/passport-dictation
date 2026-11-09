@@ -170,15 +170,20 @@ private:
     std::atomic<bool> dictation_poll_pending_{false};
     esp_timer_handle_t dictation_timer_ = nullptr;
     std::string dictation_id_;
+    std::string dictation_cancel_id_;
     std::string dictation_cloud_session_;
     int64_t dictation_phase_ms_ = 0;
     uint32_t dictation_sequence_ = 0;
+    std::string dictation_status_ = "等待配对";
+    std::string dictation_message_ = "完成联网和电脑配对后\n按住OK，等提示音再说话";
+    void ShowDictationStatus(const char* status = nullptr, const char* message = nullptr);
+    void ShowDictationFailure(const std::string& status);
     void PrepareDictation();
     void PollDictation();
     void HandleDictationBridge(const std::string& action, const std::string& id,
                                const std::string& status);
     void HandleDictationText(const std::string& text, const std::string& session);
-    void CancelDictation(const char* message);
+    void CancelDictation(const char* message, bool show_cancelled = false);
 #endif
 
     // Event handlers
