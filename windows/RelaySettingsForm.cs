@@ -30,7 +30,7 @@ internal sealed class RelaySettingsForm : Form
         layout.Controls.Add(address);
         layout.Controls.Add(code);
         layout.Controls.Add(information);
-        information.Text = "首次使用或更换中继后，请生成新配对码。长按设备上键打开设置，在屏幕显示的地址中保存同一个中继地址和新配对码。首次配网时使用 http://192.168.4.1:18766。";
+        information.Text = "首次使用或更换中继后，请生成新配对码。按住设备上键2秒，等待“连接设置已打开”，在屏幕显示的地址中保存同一个中继地址和新配对码。首次配网时使用 http://192.168.4.1:18766。";
         var actions = new FlowLayoutPanel { AutoSize = true, Dock = DockStyle.Fill };
         var copy = new Button { Text = "复制配对码", AutoSize = true };
         var close = new Button { Text = "关闭", AutoSize = true };
@@ -85,7 +85,7 @@ internal sealed class RelaySettingsForm : Form
             await changed();
             if (IsDisposed) return;
             code.Text = pairing.Code[..4] + "-" + pairing.Code[4..];
-            information.Text = $"配对码约 {Math.Ceiling(pairing.ExpiresIn / 60.0)} 分钟有效。手机连接设备热点，在 http://192.168.4.1:18766 保存配对码，再完成 Wi-Fi 配网。长按设备上键可重新打开配对设置，地址会显示在设备上。";
+            information.Text = $"配对码约 {Math.Ceiling(pairing.ExpiresIn / 60.0)} 分钟有效。首次配网时，在设备热点的 http://192.168.4.1:18766 保存配对码。设备已联网时，按住上键2秒，等待“连接设置已打开”，用同网络手机打开屏幕网址保存配对码。";
         }
         catch (OperationCanceledException) when (closing.IsCancellationRequested) { }
         catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or ArgumentException or InvalidDataException or IOException or UnauthorizedAccessException)

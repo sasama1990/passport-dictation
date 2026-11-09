@@ -1,0 +1,32 @@
+{
+  "physical_interface": 21,
+  "proxy_bypassed": true,
+  "success": true,
+  "checks": [
+    {
+      "path": "/passport-dictation/health",
+      "status": 200,
+      "elapsed_ms": 47,
+      "cache_control": "no-store",
+      "location": null,
+      "relay_version": 2
+    },
+    {
+      "path": "/passport-dictation/",
+      "status": 200,
+      "elapsed_ms": 47,
+      "cache_control": "no-store",
+      "location": null,
+      "relay_version": 2
+    },
+    {
+      "path": "/passport-dictation",
+      "status": 308,
+      "elapsed_ms": 31,
+      "cache_control": "public, max-age=3600, must-revalidate",
+      "location": "http://8.133.186.187:23000/passport-dictation/"
+    }
+  ],
+  "validation_from": "0.2.0-preview.4",
+  "relay_source_unchanged_in_0_2_0_preview_5": true
+}

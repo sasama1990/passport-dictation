@@ -189,7 +189,8 @@ void DictationBridge::Run() {
     }
 
     while (true) {
-        if (reset_pairing_.exchange(false)) {
+        const bool setup_requested = reset_pairing_.exchange(false);
+        if (setup_requested) {
             receiver_id_.clear();
             token_.clear();
             host_.clear();
@@ -204,14 +205,17 @@ void DictationBridge::Run() {
             RefreshConnectionState();
             setup_until_ms_.store(NowMs() + 600000);
             last_discovery_ms_ = -10000;
-            if (callback_) {
-                callback_("setup", SetupUrl(), "open");
-            }
         }
         if (WifiManager::GetInstance().IsInitialized() && SetupAllowed()) {
             StartSetupServer();
-        } else {
+        } else if (setup_server_ != nullptr) {
             StopSetupServer();
+            if (callback_)
+                callback_("setup", "", "closed");
+        }
+        if (setup_requested && callback_) {
+            ESP_LOGI(kTag, "Connection setup %s", setup_server_ ? "opened" : "failed");
+            callback_("setup", SetupUrl(), setup_server_ ? "open" : "failed");
         }
         if (!cloud_enabled_ &&
             NowMs() - last_discovery_ms_ >= (receiver_id_.empty() ? 1000 : 10000)) {

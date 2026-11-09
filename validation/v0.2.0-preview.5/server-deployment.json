@@ -1,0 +1,19 @@
+{
+  "project": "passport-dictation",
+  "public_url": "http://8.133.186.187:23000/passport-dictation/",
+  "directory": "/jjjworkspace/passport-dictation",
+  "service": "passport-dictation.service",
+  "service_active": true,
+  "start_at_boot": true,
+  "nginx_config": "/jjjworkspace/.hosting/projects.d/passport-dictation.conf",
+  "backend": "127.0.0.1:18767",
+  "node_version": "v22.23.4",
+  "pairing_persists_after_service_restart": true,
+  "device_credentials_persist_after_restart": true,
+  "existing_project_routes_checked": 4,
+  "existing_project_responses_match_baseline": true,
+  "https_configured_for_this_project": false,
+  "release_directory": "/jjjworkspace/passport-dictation/releases/20261109T030750Z-v0.2.0-preview.4",
+  "validation_from": "0.2.0-preview.4",
+  "relay_source_unchanged_in_0_2_0_preview_5": true
+}

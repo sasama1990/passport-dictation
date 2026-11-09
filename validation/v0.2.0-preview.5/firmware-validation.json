@@ -1,0 +1,69 @@
+{
+  "firmware_version": "2.5.0-pd5",
+  "firmware_sha256": "d92b967d44886b36991f5ccbe308cad108192565bb561843c5eb2f2ecd952158",
+  "build_success": true,
+  "app_partition_free_percent": 23,
+  "segment_checks": {
+    "bootloader.bin": {
+      "offset": "0x0",
+      "bytes": 15040,
+      "sha256": "7e3041f9b2c4e99f02b3c8360f90406a57e083dbe119c5b2a46c92787bcc33fe"
+    },
+    "partition-table.bin": {
+      "offset": "0x8000",
+      "bytes": 3072,
+      "sha256": "3c58cd9a65ffd0586a5f06800fbccc8b0d34697c055a7d6dcf1fb4d47253c472"
+    },
+    "ota_data_initial.bin": {
+      "offset": "0xd000",
+      "bytes": 8192,
+      "sha256": "7d2c7ac4888bfd75cd5f56e8d61f69595121183afc81556c876732fd3782c62f"
+    },
+    "xiaozhi.bin": {
+      "offset": "0x20000",
+      "bytes": 2365136,
+      "sha256": "b6fb0913a3168ae94d0879d77b70aa2457c0ff2627d518ad5807f79ab67b022e"
+    },
+    "generated_assets.bin": {
+      "offset": "0x600000",
+      "bytes": 1325012,
+      "sha256": "590d532c3c2f547dfa4156465a22421d5eb0698ffc82a5f3165013e28917fe79"
+    }
+  },
+  "format_check_success": true,
+  "ui_glyphs_checked": 152,
+  "missing_ui_glyphs": "",
+  "multiline_instructions_enabled": true,
+  "host_tests": {
+    "tests": 81,
+    "failures": 17,
+    "errors": 23,
+    "same_failure_test_names_as_clean_baseline": true
+  },
+  "device": {
+    "version_observed": true,
+    "boot_observation_seconds": 65,
+    "boot_banners": 1,
+    "panic_detected": false,
+    "nvs_byte_for_byte_preserved": false,
+    "nvs_application_settings_preserved": true,
+    "wifi_and_pairing_settings_preserved": true,
+    "radio_calibration_refreshed": true,
+    "changed_nvs_keys": [
+      "phy/cal_data"
+    ],
+    "dictation_stages": [
+      "正在打开连接设置",
+      "连接设置已打开"
+    ]
+  },
+  "physical_up_button": {
+    "hold_ms": 2000,
+    "setup_server_ready_after_long_press_ms": 10,
+    "setup_open_stage_observed": true,
+    "complete_setup_url_confirmed_by_user": true
+  },
+  "physical_button_sequence_validation_pending": false,
+  "complete_voice_to_native_input_validation_pending": true,
+  "wan_end_to_end_validation_pending": true
+}

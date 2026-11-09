@@ -171,6 +171,7 @@ private:
     esp_timer_handle_t dictation_timer_ = nullptr;
     std::string dictation_id_;
     std::string dictation_cancel_id_;
+    bool dictation_setup_open_ = false;
     std::string dictation_cloud_session_;
     int64_t dictation_phase_ms_ = 0;
     uint32_t dictation_sequence_ = 0;

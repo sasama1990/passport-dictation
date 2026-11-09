@@ -2,7 +2,7 @@
 
 把 AI Passport 变成 Windows 电脑的随身语音输入按钮。按住 OK 说话，松开后将云端识别的文字送入当前光标所在的输入框。
 
-Windows `0.2.0-preview.4` 与固件 `2.5.0-pd4` 增加持续的操作阶段提示，限制重复开始和取消请求，并区分中继拒绝访问、网络失败和配对失效。Windows 程序文件、窗口和托盘采用与社区封面一致的蓝色麦克风图标。
+Windows `0.2.0-preview.5` 与固件 `2.5.0-pd5` 修复上键长按后设置网址被状态刷新覆盖的问题，持续显示设置进度和完整网址。连接、录音、识别、发送与电脑确认均有独立提示。Windows 程序文件、窗口和托盘采用与社区封面一致的蓝色麦克风图标。
 
 默认中继已迁移到国内服务器，地址为 `http://8.133.186.187:23000/passport-dictation`。本版支持 HTTP、HTTPS 和项目子路径。当前默认入口使用 HTTP，识别文字和配对请求以明文传输。
 
@@ -12,17 +12,19 @@ Windows `0.2.0-preview.4` 与固件 `2.5.0-pd4` 增加持续的操作阶段提�
 
 同时安装本玩法的设备固件和 Windows 配套程序。Windows 配套 ZIP 解压后运行 `Windows/PassportDictation.exe`，其中已包含运行所需组件。包内另附分段固件、手动备份刷写脚本和许可文件。社区安装使用单独提供的完整固件镜像。
 
-[下载 Windows 配套包及固件](https://github.com/sasama1990/passport-dictation/releases/tag/v0.2.0-preview.4)
+[下载 Windows 配套包及固件](https://github.com/sasama1990/passport-dictation/releases/tag/v0.2.0-preview.5)
 
 ## 跨网络上手
+
+按住上键2秒后先显示“正在打开连接设置”，页面可用后显示“连接设置已打开”和网址。网址在设置窗口内持续显示，保存配对码后显示配对进度。
 
 1. 打开 Windows 接收程序，点“跨网络设置”，保留默认中继地址及完整的端口、项目路径，再点“生成跨网配对码”。记下有效期约 10 分钟的配对码。电脑保持联网并运行接收程序。
 2. 首次开机自动进入配网，换网时待机长按下键。用手机或电脑连接设备屏幕显示的 `Xiaozhi-XXXX` 热点，打开 `http://192.168.4.1:18766`，选择“跨网络”，输入配对码，点“保存连接设置”，再点“继续设置 Wi-Fi”。
 3. 在 `http://192.168.4.1` 选择设备要使用的 2.4 GHz Wi-Fi，输入密码，点“连接”。显示“配置成功！”即完成，失败可重连热点重试。设备与 Windows 可以使用不同网络。设备如显示小智验证码，到小智网站登录绑定。 [小智设备绑定](https://xiaozhi.me)
 4. 等待设备提示“电脑已配对”。把光标放入目标输入框，按住 OK，保持按住直到听到提示音并显示“可以说话”。说完松开，依次等待“正在识别”“正在发送文字”和“电脑确认已输入”。全过程保持原输入框与光标位置。
-5. Windows 点“退出”结束，重新打开即可继续。重新配对时在电脑生成新码，手机与设备连接同一 Wi-Fi，长按设备上键，在手机浏览器打开屏幕显示的地址填码。该设置窗口约 10 分钟有效。换网可按第 2、3 步操作。
+5. Windows 点“退出”结束，重新打开即可继续。重新配对时在电脑生成新码，手机与设备连接同一 Wi-Fi，按住设备上键2秒，在手机浏览器打开屏幕显示的地址填码。该设置窗口约 10 分钟有效。换网可按第 2、3 步操作。
 
-已使用旧默认入口的 Windows 升级后，需要重新生成跨网配对码。设备已联网时，长按上键，用同网络的手机或电脑打开屏幕显示的设置地址，保存新中继地址及新码。Wi-Fi 设置沿用。两端地址都要保留 `:23000/passport-dictation`。
+已使用旧默认入口的 Windows 升级后，需要重新生成跨网配对码。设备已联网时，按住上键2秒，用同网络的手机或电脑打开屏幕显示的设置地址，保存新中继地址及新码。Wi-Fi 设置沿用。两端地址都要保留 `:23000/passport-dictation`。
 
 [默认中继](http://8.133.186.187:23000/passport-dictation)
 
@@ -30,7 +32,7 @@ Windows `0.2.0-preview.4` 与固件 `2.5.0-pd4` 增加持续的操作阶段提�
 
 1. 将电脑与设备接入同一局域网，在 Windows 允许程序的局域网访问。
 2. Windows 的“跨网络设置”中点“使用局域网”，再在主窗口点“配对 Passport”，配对窗口持续 60 秒。
-3. 设备首次默认使用局域网发现。已启用跨网模式时，长按上键打开设置窗口，用同网络的手机打开屏幕地址，选择“局域网”并保存。等待设备提示“电脑已配对”。
+3. 设备首次默认使用局域网发现。已启用跨网模式时，按住上键2秒打开设置窗口，用同网络的手机打开屏幕地址，选择“局域网”并保存。等待设备提示“电脑已配对”。
 4. 把光标留在输入框，按住 OK，等提示音及“可以说话”后开始说话，松开等待“电脑确认已输入”。
 
 设备仍需联网使用小智云端语音识别。Wi-Fi 配置入口及小智绑定方法见上面的上手步骤。
@@ -57,19 +59,19 @@ Windows 图标更新已通过构建、成品图标提取和内嵌资源一致性
 
 ## English quick start
 
-Turn AI Passport into a handheld dictation button for Windows. Hold OK, wait for the recording prompt, speak, and release to send the cloud transcription to the selected text field. Version `0.2.0-preview.4` improves persistent stage prompts, cancellation and connection diagnostics. Its executable, windows and tray share the community cover's blue microphone icon.
+Turn AI Passport into a handheld dictation button for Windows. Hold OK, wait for the recording prompt, speak, and release to send the cloud transcription to the selected text field. Version `0.2.0-preview.5` keeps the connection setup progress and complete URL visible after holding UP. Connection, recording, recognition, sending and PC confirmation each have distinct prompts. Its executable, windows and tray share the community cover's blue microphone icon.
 
 The default relay now runs on a mainland server at `http://8.133.186.187:23000/passport-dictation`. Both clients support HTTP, HTTPS and project subpaths. The shipped default uses HTTP, so recognized text and pairing requests travel in plaintext.
 
 Install both this play's firmware and its companion Windows application.
 
-[Download the Windows companion and firmware](https://github.com/sasama1990/passport-dictation/releases/tag/v0.2.0-preview.4)
+[Download the Windows companion and firmware](https://github.com/sasama1990/passport-dictation/releases/tag/v0.2.0-preview.5)
 
 1. Extract the companion ZIP and run `Windows/PassportDictation.exe`. Open “跨网络设置” (Cross-network settings), keep the complete default relay address including its port and project path, and select “生成跨网配对码” (Generate pairing code). The code lasts about 10 minutes. Keep the PC online with the receiver running.
 2. First boot opens Wi-Fi setup. To change networks, hold DOWN while idle. On a phone or computer, join the `Xiaozhi-XXXX` hotspot shown on the device. Open `http://192.168.4.1:18766`, select “跨网络” (Cross-network), enter the code, save, and select “继续设置 Wi-Fi” (Continue Wi-Fi setup).
 3. At `http://192.168.4.1`, select a 2.4 GHz Wi-Fi network, enter its password, and select “连接” (Connect). “配置成功！” confirms setup. Rejoin the hotspot and retry if it fails. The PC and device can use different networks. If the device shows a XiaoZhi activation code, sign in and bind it on the XiaoZhi website. [XiaoZhi device activation](https://xiaozhi.me)
 4. Wait for “电脑已配对” (PC paired). Select the destination field and hold OK until the tone and “可以说话” (Ready to speak). Speak and release. Wait through recognition and sending until “电脑确认已输入” (PC confirmed input). Keep the same field and caret position throughout.
-5. Select “退出” (Exit) to stop the receiver and launch it again to continue. To pair again, generate a new PC code, connect a phone to the device's Wi-Fi network, hold UP on the device, and open the displayed setup address on the phone. Enter and save the code within the 10-minute setup window. Use steps 2–3 to change Wi-Fi networks.
+5. Select “退出” (Exit) to stop the receiver and launch it again to continue. To pair again, generate a new PC code, connect a phone to the device's Wi-Fi network, hold UP for 2 seconds on the device, and open the displayed setup address on the phone. Enter and save the code within the 10-minute setup window. Use steps 2–3 to change Wi-Fi networks.
 
 For LAN use, select “使用局域网” (Use LAN) in Windows settings and “局域网” (LAN) on the device setup page, connect both to the same LAN, allow local-network access, and open the PC's 60-second “配对 Passport” pairing window. A fresh device defaults to LAN discovery. Internet access to XiaoZhi is still required for speech recognition.
 

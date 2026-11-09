@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>PassportDictation</AssemblyName>
-    <Version>0.2.0-preview.4</Version>
+    <Version>0.2.0-preview.5</Version>
     <ApplicationIcon>Assets\passport-dictation.ico</ApplicationIcon>
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>

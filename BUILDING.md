@@ -68,7 +68,7 @@ Every new community firmware revision must have a corresponding GitHub release c
 
 ## Validation records
 
-`validation/v0.2.0-preview.4/` contains this revision's protocol and firmware validation summary. The earlier directories retain their respective release records. The root-level validation files belong to `0.1.0-preview.1`.
+`validation/v0.2.0-preview.5/` contains this revision's protocol and firmware validation summary. The earlier directories retain their respective release records. The root-level validation files belong to `0.1.0-preview.1`.
 
 The firmware host suite has the same 17 failures and 23 errors as its clean upstream snapshot. The single-board distribution omits other boards and test resources referenced by that suite. Firmware compilation passed under ESP-IDF 6.1. The shared MQTT/UDP and WebSocket code paths compile. The selected cloud service's complete `stt.text` response after manual `listen.stop` still needs physical-device testing.
 

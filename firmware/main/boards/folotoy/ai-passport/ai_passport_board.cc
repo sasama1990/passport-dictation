@@ -116,16 +116,21 @@ private:
         // Button callbacks run on the button task; schedule all UI/audio
         // work onto the main task so LVGL and codec access stay on one thread.
         auto up = adc_button_[kAdcButtonUp];
+#ifdef CONFIG_PASSPORT_DICTATION
+        up->OnPressDown([]() { ESP_LOGI(TAG, "UP pressed"); });
+        up->OnPressUp([]() { ESP_LOGI(TAG, "UP released"); });
+#endif
         up->OnClick([this]() {
 #ifdef CONFIG_PASSPORT_DICTATION
             Application::GetInstance().Schedule(
-                [this]() { GetDisplay()->ShowNotification("按住OK说话，长按上键设置"); });
+                [this]() { GetDisplay()->ShowNotification("按住上键2秒打开连接设置"); });
 #else
             Application::GetInstance().Schedule([this]() { ChangeVolume(10); });
 #endif
         });
         up->OnLongPress([this]() {
 #ifdef CONFIG_PASSPORT_DICTATION
+            ESP_LOGI(TAG, "UP long press");
             Application::GetInstance().OpenDictationSetup();
 #else
             Application::GetInstance().Schedule([this]() {

@@ -27,7 +27,7 @@ void Application::ShowDictationStatus(const char* status, const char* message) {
 void Application::ShowDictationFailure(const std::string& status) {
     ESP_LOGW("Dictation", "Result: %s", status.c_str());
     if (status == "not_paired")
-        ShowDictationStatus("等待配对", "在电脑开启配对\n长按上键打开设备设置");
+        ShowDictationStatus("等待配对", "在电脑开启配对\n按住上键2秒打开设置");
     else if (status == "pairing_expired")
         ShowDictationStatus("配对码已失效", "在电脑生成新的配对码\n长按上键重新设置");
     else if (status == "pairing_cloud")
@@ -79,10 +79,13 @@ void Application::StopDictation() {
 }
 
 void Application::OpenDictationSetup() {
+    ESP_LOGI("Dictation", "Connection setup requested");
     dictation_pressed_.store(false);
     Schedule([this]() {
         if (dictation_phase_ != DictationPhase::Idle)
             CancelDictation("进入连接设置");
+        dictation_setup_open_ = true;
+        ShowDictationStatus("正在打开连接设置", "请稍候\n等待设置网址出现");
         DictationBridge::GetInstance().ResetPairing();
     });
 }
@@ -92,6 +95,10 @@ void Application::PrepareDictation() {
         return;
     }
     if (dictation_phase_ != DictationPhase::Idle) {
+        ShowDictationStatus();
+        return;
+    }
+    if (dictation_setup_open_) {
         ShowDictationStatus();
         return;
     }
@@ -119,22 +126,37 @@ void Application::PrepareDictation() {
 
 void Application::HandleDictationBridge(const std::string& action, const std::string& id,
                                         const std::string& status) {
-    auto* display = Board::GetInstance().GetDisplay();
     if (action == "connection") {
+        if (dictation_setup_open_ && status != "ready")
+            return;
         if (dictation_phase_ == DictationPhase::Idle) {
-            if (status == "ready")
+            if (status == "ready") {
+                dictation_setup_open_ = false;
                 ShowDictationStatus("电脑已配对", "先点选电脑输入框\n按住OK，等提示音再说话");
-            else
+            } else
                 ShowDictationFailure(status);
         }
         return;
     }
     if (action == "setup") {
-        display->SetChatMessage("system", id.c_str());
-        display->ShowNotification("手机打开设置页输入配对码", 10000);
+        if (status == "closed") {
+            if (dictation_setup_open_) {
+                dictation_setup_open_ = false;
+                ShowDictationStatus("设置窗口已结束", "按住上键2秒重新打开\n在电脑生成新配对码");
+            }
+            return;
+        }
+        dictation_setup_open_ = status == "open";
+        if (!dictation_setup_open_) {
+            ShowDictationStatus("连接设置打开失败", "按住上键2秒重试\n也可重启设备后再试");
+            return;
+        }
+        const auto message = "手机连设备所在Wi-Fi\n浏览器打开\n" + id + "\n输入电脑配对码并保存";
+        ShowDictationStatus("连接设置已打开", message.c_str());
         return;
     }
     if (action == "pair") {
+        dictation_setup_open_ = false;
         if (dictation_phase_ != DictationPhase::Idle)
             return;
         if (status == "paired_cloud" || status == "paired")
